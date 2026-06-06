@@ -6,6 +6,8 @@ Returns an AgentsResult-shaped dict (see schemas.py / the frozen contract).
 """
 from __future__ import annotations
 
+import concurrent.futures as cf
+
 from PIL import Image
 
 import branch
@@ -48,15 +50,25 @@ def _serialize_tree(tree: list[dict]) -> list[dict]:
              "directive": str(n["directive"])[:80]} for n in tree]
 
 
-def run(image: Image.Image, brand: str = "the brand") -> dict:
-    """Branching tree-search: explore edits over several rounds, kill the ones that
-    don't improve, grow the best. Never regresses (the original is the floor)."""
-    target = gemini.detect_target(image)
+def run(image: Image.Image, brand: str = "the brand", depth: int = 1) -> dict:
+    """Optimize an ad. LIVE path uses depth=1 (flat best-of-N with the edits run
+    CONCURRENTLY → ~15-25s, per C's latency note). depth>1 runs the full branching
+    tree-search (slower; use it to PRECOMPUTE the showcase, not on the live path).
+    Never regresses — the original is the floor."""
+    # Stage 1: independent intake calls run concurrently (target detect + brand brief).
+    with cf.ThreadPoolExecutor(max_workers=2) as ex:
+        f_target, f_brief = ex.submit(gemini.detect_target, image), ex.submit(insider, brand)
+        target, brief = f_target.result(), f_brief.result()
+
     before = dg.predict(image, target)
-    gemini.label_distractors(image, before["distractors"])  # name thieves for directives + UI
     baseline = before["attention_score"]
-    brief = insider(brand)
-    insights = scout(brand, brief)
+
+    # Stage 2: distractor naming + competitor RAG are independent — run concurrently.
+    with cf.ThreadPoolExecutor(max_workers=2) as ex:
+        f_names = ex.submit(gemini.label_distractors, image, before["distractors"])
+        f_insights = ex.submit(scout, brand, brief)
+        f_names.result()
+        insights = f_insights.result()
 
     pool = _directive_pool(before, insights)
 
@@ -68,7 +80,7 @@ def run(image: Image.Image, brand: str = "the brand") -> dict:
         image, baseline, propose,
         edit=lambda img, directive: gemini.edit_image(img, directive),
         score=lambda variant: dg.score_only(variant, target),
-        breadth=settings.breadth, max_depth=settings.max_depth, beam_width=1,
+        breadth=settings.breadth, max_depth=depth, beam_width=1,
         target_score=settings.target_score, epsilon=settings.epsilon,
     )
 

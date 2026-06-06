@@ -15,6 +15,7 @@ root (original) is the floor, so best_score >= baseline always.
 """
 from __future__ import annotations
 
+import concurrent.futures as cf
 import itertools
 from typing import Callable
 
@@ -46,21 +47,33 @@ def search(
     frontier = [root]
     best = root
 
+    def _expand(job):
+        parent, directive = job
+        variant, desc = edit(images[parent["id"]], directive)
+        return parent, desc, variant, round(float(score(variant)), 4)
+
     for depth in range(1, max_depth + 1):
         prev_best = best["score"]
+        jobs = [(parent, d) for parent in frontier
+                for d in propose(images[parent["id"]], parent, breadth)]
+        if not jobs:
+            break
+
+        # Edits/scores are independent -> run concurrently. gemini.edit_image blocks on
+        # I/O, so threads collapse N image-gens from ~N x to ~1 x (the live-path latency
+        # win C flagged). ex.map preserves order, so node ids stay deterministic.
+        with cf.ThreadPoolExecutor(max_workers=min(8, len(jobs))) as ex:
+            expanded = list(ex.map(_expand, jobs))
+
         children = []
-        for parent in frontier:
-            for directive in propose(images[parent["id"]], parent, breadth):
-                variant, desc = edit(images[parent["id"]], directive)
-                s = round(float(score(variant)), 4)
-                alive = s > parent["score"]
-                node = {"id": next(ids), "parent": parent["id"], "depth": depth,
-                        "directive": desc, "score": s,
-                        "status": "alive" if alive else "dead"}
-                tree.append(node)
-                images[node["id"]] = variant
-                if alive:
-                    children.append(node)
+        for parent, desc, variant, s in expanded:
+            node = {"id": next(ids), "parent": parent["id"], "depth": depth,
+                    "directive": desc, "score": s,
+                    "status": "alive" if s > parent["score"] else "dead"}
+            tree.append(node)
+            images[node["id"]] = variant
+            if node["status"] == "alive":
+                children.append(node)
 
         if not children:
             break  # whole frontier died -> converged
