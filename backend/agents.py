@@ -44,16 +44,25 @@ def scout(brand: str, brief: dict) -> dict:
 
 
 def _directive_pool(before: dict, insights: dict, brand: str) -> list[str]:
-    """Diverse, AGGRESSIVE edit hypotheses — gentle nudges don't move DeepGaze; suppressing
-    competitors does (verified: +10 pts compounding vs +1 for soft edits)."""
+    """Diverse edit hypotheses, spanning safe→moderately strong. ENHANCEMENT-first so the
+    winner looks like a *better ad*, not a scorched background with a floating logo; the
+    Judge-gated fitness (_make_scorer) penalizes any variant that crosses into garish, so
+    the search can push moderately without an ugly edit winning on raw attention."""
     target = f"the {brand} logo and product"
-    pool = [f"strongly darken, blur and desaturate the {d['desc']} so it stops competing for attention"
-            for d in before["distractors"]]
-    pool += [
-        f"mute everything except {target}: darken and desaturate the background and surrounding "
-        f"objects so {target} is the single brightest focal point",
-        f"boost the contrast, saturation and sharpness of {target} while dimming everything around it",
+    pool = [
+        f"make {target} the hero of the shot: clearly boost its contrast, color saturation and "
+        f"sharpness and add directional lighting so the eye lands on it first — keep the scene "
+        f"photographic and on-brand",
+        f"make {target} pop AND noticeably darken and desaturate the background and surrounding "
+        f"objects so {target} is the brightest focal point — keep every element recognizable, no "
+        f"black voids, still a real-looking ad",
+        f"add a focal vignette and depth-of-field falloff so the surroundings blur softly and "
+        f"{target} stays crisp and front-of-stage, like a professional product shot",
     ]
+    # Moderate, targeted suppression of each competing element (clearly tone down, not blackout).
+    pool += [f"clearly tone down the {d['desc']} — reduce its brightness, color and detail so it "
+             f"stops pulling focus from {target}, but keep it present and recognizable"
+             for d in before["distractors"]]
     pool += [t["apply"] for t in insights.get("tactics", [])]
     seen, uniq = set(), []
     for d in pool:
