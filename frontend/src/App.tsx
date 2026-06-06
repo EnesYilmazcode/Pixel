@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { UserButton } from "@clerk/react";
-import { predict, runAgents, USE_MOCK_PREDICT, type PredictResult, type AgentsResult, type Fixation, type TreeNode } from "./api";
+import { predict, runAgents, USE_MOCK_PREDICT, type PredictResult, type AgentsResult, type Fixation } from "./api";
 import { SAMPLES, type Sample } from "./samples";
 import HeroBranches from "./HeroBranches";
+import BranchWorkspace from "./BranchWorkspace";
 
 // UserButton must live inside a ClerkProvider; main.tsx only mounts one when a key exists.
 const HAS_CLERK = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -186,8 +187,6 @@ export default function App() {
                 </div>
               ) : null}
 
-              {agents?.tree?.length ? <BranchTree tree={agents.tree} /> : null}
-
               {agents && (
                 <div className="block pipe">
                   <h3>Agent pipeline</h3>
@@ -211,6 +210,10 @@ export default function App() {
               )}
             </aside>
           </div>
+
+          {agents?.tree?.length ? (
+            <BranchWorkspace tree={agents.tree} baseline={agents.baseline_score} />
+          ) : null}
         </>
       )}
     </div>
@@ -249,46 +252,6 @@ function HeatmapOverlay({ pred }: { pred: PredictResult }) {
     })
     .join(",");
   return <div className="heat" style={{ backgroundImage: blobs }} />;
-}
-
-// Branch tree: the REAL tree-search result, revealed round-by-round. Each round the
-// surviving best spawns variant edits; losers are pruned (red), the winner kept (green).
-// Honest — these are the actual nodes/scores the optimizer produced, animated on arrival.
-function BranchTree({ tree }: { tree: TreeNode[] }) {
-  const root = tree.find((n) => n.parent === null) ?? tree[0];
-  const depths = Array.from(new Set(tree.map((n) => n.depth))).sort((a, b) => a - b);
-  const best = tree.reduce((a, b) => (b.score > a.score ? b : a), root);
-  return (
-    <div className="block">
-      <h3>Branch search · live tree</h3>
-      <div className="tree">
-        {depths.map((d) => {
-          const col = tree.filter((n) => n.depth === d).sort((a, b) => b.score - a.score);
-          return (
-            <div className="tcol" key={d}>
-              <div className="tcol-h">{d === 0 ? "original" : `round ${d}`}</div>
-              {col.map((n, i) => {
-                const kept = n.id === best.id;
-                const dead = n.status === "dead" || n.status === "pruned";
-                const cls = n.parent === null ? "root" : kept ? "best" : dead ? "dead" : "alive";
-                return (
-                  <div className={`tnode ${cls}`} key={n.id} style={{ animationDelay: `${d * 0.5 + i * 0.16}s` }}>
-                    <div className="tscore">{Math.round(n.score * 100)}%</div>
-                    <div className="tdir" title={n.directive}>
-                      {n.parent === null ? "baseline image" : n.directive}
-                    </div>
-                    {n.parent !== null && (
-                      <div className="tstat">{kept ? "✓ kept" : dead ? "✕ pruned" : "alive"}</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 // Scanpath: the predicted gaze ORDER. A connected 1→2→3→4 path (line drawn through

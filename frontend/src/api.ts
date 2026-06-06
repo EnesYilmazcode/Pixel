@@ -36,7 +36,9 @@ export type TreeNode = {
   depth: number;
   score: number;
   status: "root" | "alive" | "dead" | "pruned" | "best";
-  directive: string;
+  directive: string;       // the Nano Banana edit prompt for this node
+  image?: string;          // this variant's image (data URL) — present in real/captured runs
+  heatmap?: string;        // this variant's attention heatmap (data URL)
 };
 export type AgentsResult = {
   tree?: TreeNode[];
