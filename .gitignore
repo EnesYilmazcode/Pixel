@@ -39,3 +39,6 @@ Thumbs.db
 
 # Per-run agent artifacts (ephemeral; regenerated each run)
 backend/runs/
+
+# Saved campaign data (user content)
+backend/campaigns/

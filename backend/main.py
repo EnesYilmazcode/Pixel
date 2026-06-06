@@ -4,17 +4,19 @@ Run:  uvicorn main:app --reload --port 8000   (from backend/)
 """
 from __future__ import annotations
 
+import base64
 import io
 import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 
 import agents
 import deepgaze_runner as dg
 import gemini
+import storage
 
 @asynccontextmanager
 async def _lifespan(_app):
@@ -39,6 +41,10 @@ app.add_middleware(
 
 async def _image(file: UploadFile) -> Image.Image:
     return Image.open(io.BytesIO(await file.read())).convert("RGB")
+
+
+def _data_url_to_image(data_url: str) -> Image.Image:
+    return Image.open(io.BytesIO(base64.b64decode(data_url.split(",", 1)[-1]))).convert("RGB")
 
 
 @app.get("/health")
@@ -69,3 +75,34 @@ async def edit(image: UploadFile = File(...), directive: str = Form(...)) -> dic
 @app.post("/agents")
 async def run_agents(image: UploadFile = File(...), brand: str = Form("the brand")) -> dict:
     return agents.run(await _image(image), brand)
+
+
+# --- Campaigns: save / list / resume / optimize ---------------------------------
+@app.post("/campaigns")
+async def create_campaign(image: UploadFile = File(...), name: str = Form(""),
+                          brand: str = Form("the brand")) -> dict:
+    rec = storage.create_campaign(name, brand, dg.to_data_url(await _image(image)))
+    return {k: rec[k] for k in ("id", "name", "brand", "created_at")}
+
+
+@app.get("/campaigns")
+def list_campaigns() -> list[dict]:
+    return storage.list_campaigns()
+
+
+@app.get("/campaigns/{cid}")
+def get_campaign(cid: str) -> dict:
+    try:
+        return storage.get_campaign(cid)
+    except FileNotFoundError:
+        raise HTTPException(404, "campaign not found")
+
+
+@app.post("/campaigns/{cid}/optimize")
+def optimize_campaign(cid: str, brand: str | None = Form(None)) -> dict:
+    try:
+        rec = storage.get_campaign(cid)
+    except FileNotFoundError:
+        raise HTTPException(404, "campaign not found")
+    result = agents.run(_data_url_to_image(rec["original_png"]), brand or rec["brand"])
+    return storage.save_run(cid, result)
