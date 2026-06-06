@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { UserButton } from "@clerk/react";
-import { predict, runAgents, USE_MOCK_PREDICT, USE_MOCK_AGENTS, type PredictResult, type AgentsResult, type Fixation } from "./api";
+import { UserButton, SignInButton, Show } from "@clerk/react";
+import { predict, optimizeStep, USE_MOCK_PREDICT, type PredictResult, type AgentsResult, type TreeNode, type Fixation } from "./api";
 import { SAMPLES, type Sample } from "./samples";
 import HeroBranches from "./HeroBranches";
 import BranchWorkspace from "./BranchWorkspace";
@@ -8,6 +8,27 @@ import ActivityLog from "./ActivityLog";
 
 // UserButton must live inside a ClerkProvider; main.tsx only mounts one when a key exists.
 const HAS_CLERK = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+// Control state for the incremental "one branch at a time" optimizer.
+type StepCtl = {
+  step: number;          // next branch index (also the directive to try)
+  baseline: number;      // original attention score (the headline floor)
+  bestScore: number;     // best attention so far
+  bestNodeId: number;    // tree id of the current best (parent for the next branch)
+  bestImgUrl: string;    // current best creative (data URL / sample URL) to edit next
+  running: boolean;      // a branch is generating
+  awaiting: boolean;     // paused, waiting for the user to continue/stop
+  done: boolean;         // user chose to stop
+  exhausted: boolean;    // tried every directive in the pool
+  lastImproved: boolean; // did the most recent branch beat the current best?
+  lastScore: number;     // most recent branch's attention
+  lastJudge: number;     // most recent branch's Judge brand-fit
+};
+
+async function dataUrlToFile(url: string, name: string): Promise<File> {
+  const blob = await (await fetch(url)).blob();
+  return new File([blob], name, { type: blob.type || "image/png" });
+}
 
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
@@ -17,15 +38,17 @@ export default function App() {
   const [pred, setPred] = useState<PredictResult | null>(null);
   const [agents, setAgents] = useState<AgentsResult | null>(null);
   const [busy, setBusy] = useState<string>("");
+  // Incremental "one branch at a time" optimizer control (null = not optimizing).
+  const [stepCtl, setStepCtl] = useState<StepCtl | null>(null);
 
   function reset() {
-    setFile(null); setImgUrl(""); setActive(null); setPred(null); setAgents(null);
+    setFile(null); setImgUrl(""); setActive(null); setPred(null); setAgents(null); setStepCtl(null);
   }
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setActive(null); setPred(null); setAgents(null);
+    setActive(null); setPred(null); setAgents(null); setStepCtl(null);
     setFile(f); setImgUrl(URL.createObjectURL(f));
   }
 
@@ -47,36 +70,78 @@ export default function App() {
 
   async function analyze() {
     if (!file) return;
-    setBusy("Analyzing attention…");
+    setBusy("Analyzing attention…"); setStepCtl(null); setAgents(null);
     try { setPred(await predict(file, active?.target_box)); }
     catch (e) { alert(String(e)); }
     finally { setBusy(""); }
   }
 
+  // Start the incremental optimizer: establish a baseline, seed the tree with the original,
+  // then grow ONE branch. After each branch the user decides whether to spawn another.
   async function optimize() {
     if (!file) return;
-    setAgents(null);
-    // Cycle the real agent stages as a loader while the live call runs (mock paces faster).
-    const stages = [
-      "Insider · reading the brand brief",
-      "Scout · searching competitor campaigns",
-      "Eye · scoring baseline attention",
-      "Retoucher · generating edits with Nano Banana",
-      "Eye · re-scoring the variants",
-    ];
-    let si = 0; setBusy(stages[0]);
-    const step = USE_MOCK_AGENTS ? 1150 : 8000;
-    const iv = setInterval(() => { si = Math.min(si + 1, stages.length - 1); setBusy(stages[si]); }, step);
+    let p = pred;
+    if (!p) {
+      setBusy("Eye · scoring baseline attention…");
+      try { p = await predict(file, active?.target_box); setPred(p); }
+      catch (e) { alert(String(e)); setBusy(""); return; }
+    }
+    const baseline = p.attention_score;
+    const root: TreeNode = {
+      id: 0, parent: null, depth: 0, score: baseline, status: "root",
+      directive: "original", image: imgUrl, heatmap: p.heatmap_png || undefined,
+    };
+    setAgents({
+      tree: [root], baseline_score: baseline, final_score: baseline, delta: 0,
+      heatmap_before: p.heatmap_png || "", heatmap_after: "", variant_png: "",
+      rationale: "", iterations: [],
+    });
+    const ctl: StepCtl = {
+      step: 0, baseline, bestScore: baseline, bestNodeId: 0, bestImgUrl: imgUrl,
+      running: false, awaiting: false, done: false, exhausted: false,
+      lastImproved: false, lastScore: baseline, lastJudge: 0,
+    };
+    setStepCtl(ctl);
+    await runBranch(ctl);
+  }
+
+  // Grow exactly one branch off the current best, score + judge it, and pause for the user.
+  async function runBranch(ctl: StepCtl) {
+    if (!file) return;
+    setStepCtl({ ...ctl, running: true, awaiting: false });
+    setBusy(`Retoucher · branch ${ctl.step + 1} with Nano Banana…`);
     try {
-      // In mock mode the call is instant, so hold a minimum so the staged loader is visible;
-      // live mode waits on the real call itself.
-      const minWait = USE_MOCK_AGENTS ? new Promise((r) => setTimeout(r, stages.length * 1150)) : Promise.resolve();
-      const [result] = await Promise.all([runAgents(file, brand, active?.target_box), minWait]);
-      setAgents(enrichTree(result, imgUrl)); // attach the real original + winner images to the tree
+      const src = ctl.step === 0 ? file : await dataUrlToFile(ctl.bestImgUrl, "best.png");
+      const res = await optimizeStep(src, brand, ctl.step, active?.target_box);
+      const id = ctl.step + 1; // one node per branch -> ids are deterministic
+      const node: TreeNode = {
+        id, parent: ctl.bestNodeId, depth: ctl.step + 1, score: res.new_score,
+        status: res.improved ? "best" : "dead", directive: res.directive, image: res.variant_png,
+      };
+      setAgents((prev) => {
+        if (!prev) return prev;
+        let tree = [...(prev.tree ?? []), node];
+        if (res.improved) tree = tree.map((n) => (n.id === ctl.bestNodeId ? { ...n, status: "alive" } : n));
+        const iterations = [...prev.iterations, {
+          agent: `Branch ${ctl.step + 1}`, status: "done",
+          summary: `${res.improved ? "✓ kept" : res.vetoed ? "✕ Judge vetoed" : "✕ no lift"} · ${Math.round(res.new_score * 100)}% · ${res.directive.slice(0, 64)}`,
+        }];
+        return res.improved
+          ? { ...prev, tree, iterations, variant_png: res.variant_png, final_score: res.new_score, delta: res.new_score - ctl.baseline }
+          : { ...prev, tree, iterations };
+      });
+      setStepCtl({
+        ...ctl, step: ctl.step + 1, running: false, awaiting: true,
+        lastImproved: res.improved, lastScore: res.new_score, lastJudge: res.judge,
+        bestScore: res.improved ? res.new_score : ctl.bestScore,
+        bestNodeId: res.improved ? id : ctl.bestNodeId,
+        bestImgUrl: res.improved ? res.variant_png : ctl.bestImgUrl,
+        exhausted: ctl.step + 1 >= res.n_directives,
+      });
     } catch (e) {
       alert(String(e));
+      setStepCtl({ ...ctl, running: false, awaiting: true });
     } finally {
-      clearInterval(iv);
       setBusy("");
     }
   }
@@ -94,7 +159,14 @@ export default function App() {
           <h1>Pixel</h1>
         </span>
         <span className="spacer" />
-        {HAS_CLERK && <span className="auth"><UserButton /></span>}
+        {HAS_CLERK && (
+          <span className="auth">
+            <Show when="signed-out">
+              <SignInButton mode="modal"><button className="ghost">Log in</button></SignInButton>
+            </Show>
+            <Show when="signed-in"><UserButton /></Show>
+          </span>
+        )}
       </header>
 
       {!imgUrl ? (
@@ -234,6 +306,29 @@ export default function App() {
             </aside>
           </div>
 
+          {stepCtl && (stepCtl.running || stepCtl.awaiting) && !stepCtl.done && (
+            <div className="branchctl">
+              {stepCtl.running ? (
+                <span className="bc-msg">Growing branch {stepCtl.step + 1} — Nano Banana is editing…<span className="dots" /></span>
+              ) : (
+                <>
+                  <span className="bc-msg">
+                    {stepCtl.lastImproved
+                      ? `✓ Branch ${stepCtl.step} kept — attention now ${Math.round(stepCtl.lastScore * 100)}% (+${Math.round((stepCtl.bestScore - stepCtl.baseline) * 100)} pts total)`
+                      : `✕ Branch ${stepCtl.step} didn't beat current — ${Math.round(stepCtl.lastScore * 100)}%, Judge brand-fit ${stepCtl.lastJudge}`}
+                  </span>
+                  <span className="spacer" />
+                  {stepCtl.exhausted
+                    ? <span className="bc-note">all directions explored</span>
+                    : <button className="primary" onClick={() => runBranch(stepCtl)}>Spawn another branch ✦</button>}
+                  <button className="ghost" onClick={() => setStepCtl({ ...stepCtl, awaiting: false, done: true })}>
+                    {stepCtl.bestScore > stepCtl.baseline ? "Stop — use this result" : "Stop"}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           {agents?.tree?.length ? (
             <BranchWorkspace tree={agents.tree} baseline={agents.baseline_score} />
           ) : null}
@@ -241,20 +336,6 @@ export default function App() {
       )}
     </div>
   );
-}
-
-// Attach real images to the tree: the root shows the original ad (+before heatmap), the
-// winner shows the edited variant (+after heatmap). Keeps any per-node images the backend
-// already provided. Pruned variants stay imageless — the workspace shows their prompt.
-function enrichTree(res: AgentsResult, originalUrl: string): AgentsResult {
-  if (!res.tree?.length) return res;
-  const best = res.tree.reduce((a, b) => (b.score > a.score ? b : a), res.tree[0]);
-  const tree = res.tree.map((n) => {
-    if (n.parent === null) return { ...n, image: n.image || originalUrl, heatmap: n.heatmap || res.heatmap_before };
-    if (n.id === best.id) return { ...n, image: n.image || res.variant_png, heatmap: n.heatmap || res.heatmap_after };
-    return n;
-  });
-  return { ...res, tree };
 }
 
 // Animated count-up for the hero score (no dependency; rAF easing).
