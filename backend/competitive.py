@@ -62,10 +62,14 @@ def _retrieve_local(brand: str, brief: dict, fam: str | None, k: int) -> list[di
 def _retrieve_pinecone(brand: str, brief: dict, fam: str | None, k: int) -> list[dict]:
     try:
         from google import genai
+        from google.genai import types
         from pinecone import Pinecone
         gem = genai.Client(api_key=settings.gemini_api_key)
         q = f"{brand} {brief.get('tone', '')} ad layout attention CTA logo placement"
-        vec = gem.models.embed_content(model="text-embedding-004", contents=q).embeddings[0].values
+        vec = gem.models.embed_content(
+            model=settings.gemini_embed_model, contents=q,
+            config=types.EmbedContentConfig(output_dimensionality=settings.embed_dim),
+        ).embeddings[0].values
         index = Pinecone(api_key=settings.pinecone_api_key).Index(settings.pinecone_index)
         res = index.query(vector=vec, top_k=k, namespace=fam or "", include_metadata=True)
         return [m["metadata"] for m in res.get("matches", [])]

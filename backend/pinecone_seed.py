@@ -104,24 +104,45 @@ def _seed_pinecone() -> None:
         return
     try:
         from google import genai
+        from google.genai import types
         from pinecone import Pinecone
     except ImportError:
         print("pinecone / google-genai not installed — uncomment them in requirements.txt. "
               "Local kb.json still works.")
         return
 
+    import time
+
+    from pinecone import ServerlessSpec
+
     gem = genai.Client(api_key=settings.gemini_api_key)
     pc = Pinecone(api_key=settings.pinecone_api_key)
+
+    # text-embedding-004 → 768 dims. Create the index on first run.
+    if settings.pinecone_index not in [i["name"] for i in pc.list_indexes()]:
+        pc.create_index(name=settings.pinecone_index, dimension=768, metric="cosine",
+                        spec=ServerlessSpec(cloud="aws", region="us-east-1"))
+        for _ in range(30):
+            if pc.describe_index(settings.pinecone_index).status["ready"]:
+                break
+            time.sleep(1)
     index = pc.Index(settings.pinecone_index)
+
+    meta_keys = ("brand", "family", "year", "tactic", "apply", "evidence", "text")
+    n = 0
     for i, ad in enumerate(ADS):
-        emb = gem.models.embed_content(model="text-embedding-004", contents=ad["text"])
-        vec = emb.embeddings[0].values
-        index.upsert(
-            namespace=ad["family"],
-            vectors=[{"id": f"ad-{i}", "values": vec,
-                      "metadata": {k: ad[k] for k in ("brand", "family", "year", "tactic", "apply", "evidence", "text")}}],
-        )
-    print(f"Upserted {len(ADS)} ads to Pinecone index '{settings.pinecone_index}'.")
+        try:
+            vec = gem.models.embed_content(
+                model=settings.gemini_embed_model, contents=ad["text"],
+                config=types.EmbedContentConfig(output_dimensionality=settings.embed_dim),
+            ).embeddings[0].values
+            index.upsert(namespace=ad["family"],
+                         vectors=[{"id": f"ad-{i}", "values": vec,
+                                   "metadata": {k: ad[k] for k in meta_keys}}])
+            n += 1
+        except Exception as ex:
+            print(f"  skip {ad['brand']}: {ex}")
+    print(f"Upserted {n}/{len(ADS)} ads to Pinecone index '{settings.pinecone_index}'.")
 
 
 if __name__ == "__main__":

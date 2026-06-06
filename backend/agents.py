@@ -8,69 +8,70 @@ from __future__ import annotations
 
 from PIL import Image
 
+import competitive
 import deepgaze_runner as dg
 import gemini
+from config import settings
 
 
 def insider(brand: str) -> dict:
-    """Our-brand brief. TODO(Phase 2): one Gemini call from brand + uploaded assets."""
-    return {
-        "audience": "broad consumer",
-        "tone": "bold, confident",
-        "palette": [],
-        "dos": ["keep the product and logo dominant"],
-        "donts": ["don't bury the call-to-action"],
-    }
+    """Insider agent — our-brand brief (real Gemini call, neutral fallback)."""
+    return gemini.brand_brief(brand)
 
 
 def scout(brand: str, brief: dict) -> dict:
-    """Competitor tactics. TODO(Phase 2): Pinecone RAG → Gemini synthesis."""
-    return {
-        "tactics": [
-            {
-                "tactic": "high-contrast CTA",
-                "evidence": "category leaders",
-                "apply": "boost the product/CTA contrast and saturation",
-            }
-        ]
-    }
+    """Scout agent — competitor tactics via Pinecone RAG (see competitive.py)."""
+    return competitive.scout(brand, brief)
 
 
-def _directive(baseline: dict, insights: dict) -> str:
-    parts = []
-    if baseline["distractors"]:
-        parts.append(f"reduce the visual weight of the {baseline['distractors'][0]['desc']}")
-    if insights.get("tactics"):
-        parts.append(insights["tactics"][0]["apply"])
-    return "; ".join(parts) or "make the product the clear focal point"
+def _propose_directives(before: dict, insights: dict, n: int) -> list[str]:
+    """N diverse edit hypotheses — each branch tests a different idea."""
+    out = []
+    if before["distractors"]:
+        out.append(f"reduce the visual weight of the {before['distractors'][0]['desc']} "
+                   "so it stops drawing the eye")
+    out += [t["apply"] for t in insights.get("tactics", [])]
+    out.append("increase the contrast and saturation of the main product so it is the clear focal point")
+    seen, uniq = set(), []
+    for d in out:
+        if d and d not in seen:
+            seen.add(d)
+            uniq.append(d)
+    return uniq[: max(1, n)]
 
 
 def run(image: Image.Image, brand: str = "the brand") -> dict:
+    """Single-round best-of-N: try N edits, keep the best that beats baseline.
+    Never regresses (the original is the floor) — the score only ever goes up."""
     target = gemini.detect_target(image)
     before = dg.predict(image, target)
+    baseline = before["attention_score"]
     brief = insider(brand)
     insights = scout(brand, brief)
 
-    steps = [
-        {"agent": "Insider", "status": "done", "summary": f"{brand}: {brief['tone']}"},
-        {"agent": "Scout", "status": "done",
-         "summary": insights["tactics"][0]["tactic"] if insights["tactics"] else "no tactics"},
-        {"agent": "Eye", "status": "done",
-         "summary": f"baseline {round(before['attention_score'] * 100)}% on target"},
-    ]
+    # Retoucher proposes + applies N edits; Eye scores each; keep the best.
+    best = {"score": baseline, "img": image, "desc": "kept original (no edit beat baseline)"}
+    for directive in _propose_directives(before, insights, settings.breadth):
+        variant, desc = gemini.edit_image(image, directive)
+        score = dg.score_only(variant, target)
+        if score > best["score"]:
+            best = {"score": score, "img": variant, "desc": desc}
 
-    directive = _directive(before, insights)
-    variant, desc = gemini.edit_image(image, directive)
-    after = dg.predict(variant, target)
-
-    steps += [
-        {"agent": "Retoucher", "status": "done", "summary": desc},
-        {"agent": "Eye", "status": "done",
-         "summary": f"re-score {round(after['attention_score'] * 100)}% on target"},
-    ]
-
-    baseline, final = before["attention_score"], after["attention_score"]
+    improved = best["img"] is not image
+    after = dg.predict(best["img"], target) if improved else before
+    final = after["attention_score"]
     thief = before["distractors"][0]["desc"] if before["distractors"] else "competing elements"
+
+    steps = [
+        {"agent": "Insider", "status": "done", "summary": f"{brand}: {brief.get('tone', '')}"[:90]},
+        {"agent": "Scout", "status": "done",
+         "summary": insights["tactics"][0]["tactic"] if insights.get("tactics") else "no tactics"},
+        {"agent": "Eye", "status": "done", "summary": f"baseline {round(baseline * 100)}% on target"},
+        {"agent": "Retoucher", "status": "done",
+         "summary": f"tried {settings.breadth} edits; best: {best['desc']}"[:110]},
+        {"agent": "Eye", "status": "done", "summary": f"best {round(final * 100)}% on target"},
+    ]
+
     return {
         "baseline_score": baseline,
         "final_score": final,
@@ -79,7 +80,8 @@ def run(image: Image.Image, brand: str = "the brand") -> dict:
         "competitive_insights": insights,
         "heatmap_before": before["heatmap_png"],
         "heatmap_after": after["heatmap_png"],
-        "variant_png": dg.to_data_url(variant),
-        "rationale": f"Reduced the {thief} and {directive}, pulling attention toward the target.",
+        "variant_png": dg.to_data_url(best["img"]),
+        "rationale": (f"Reduced the {thief} and amplified the brand target; "
+                      f"kept the best of {settings.breadth} agent edits."),
         "iterations": steps,
     }

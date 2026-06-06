@@ -19,6 +19,8 @@ class Settings:
     # Pinned model ids (see PLAN.md — 2.5-flash-image is GA + reliable for the demo).
     gemini_image_model: str = "gemini-2.5-flash-image"
     gemini_text_model: str = "gemini-2.5-flash"
+    gemini_embed_model: str = "gemini-embedding-001"
+    embed_dim: int = 768  # must match the Pinecone index dimension
 
     # Retoucher beam-search params (greedy; see tasks/agent-layer-tasks.md).
     breadth: int = 3

@@ -36,3 +36,6 @@ build/
 Thumbs.db
 .vscode/
 .idea/
+
+# Per-run agent artifacts (ephemeral; regenerated each run)
+backend/runs/

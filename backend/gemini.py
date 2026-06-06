@@ -97,6 +97,32 @@ def judge(image: Image.Image, brand: str) -> tuple[float, str]:
         return 0.6, "[judge unavailable]"
 
 
+_FALLBACK_BRIEF = {
+    "audience": "broad consumer",
+    "tone": "bold, confident",
+    "palette": [],
+    "dos": ["keep the product and logo dominant"],
+    "donts": ["don't bury the call-to-action"],
+}
+
+
+def brand_brief(brand: str) -> dict:
+    """Insider: a compact brand brief. Neutral fallback with no key."""
+    client = _genai()
+    if client is None:
+        return dict(_FALLBACK_BRIEF)
+    prompt = (
+        f'Compact creative brief for the brand "{brand}". Respond ONLY JSON '
+        '{"audience":..,"tone":..,"palette":[hex,...],"dos":[..],"donts":[..]}.'
+    )
+    try:
+        resp = client.models.generate_content(model=settings.gemini_text_model, contents=prompt)
+        b = json.loads(_first_json(resp.text))
+        return {**_FALLBACK_BRIEF, **b}
+    except Exception:
+        return dict(_FALLBACK_BRIEF)
+
+
 def _first_json(text: str) -> str:
     s, e = text.find("{"), text.rfind("}")
     return text[s:e + 1] if s != -1 and e != -1 else "{}"
