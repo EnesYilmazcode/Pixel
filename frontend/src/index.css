@@ -243,6 +243,16 @@ button.primary:hover:not(:disabled) { background: var(--accent-ink); border-colo
 button.ghost { background: transparent; border-color: transparent; color: var(--muted); padding: 8px 10px; }
 button.ghost:hover:not(:disabled) { color: var(--ink); border-color: transparent; }
 
+/* ── Incremental branch control (one branch at a time) ───────────────────── */
+.branchctl {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 18px 0 0; padding: 14px 18px;
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--r-md, 10px);
+}
+.branchctl .bc-msg { font-weight: 600; font-size: 14px; color: var(--ink); }
+.branchctl .bc-note { color: var(--muted); font-size: 13px; font-style: italic; }
+.branchctl .spacer { flex: 1; }
+
 /* ── Analysis view ───────────────────────────────────────────────────────── */
 .controls {
   display: flex; gap: 10px; align-items: center;
@@ -394,7 +404,7 @@ button.ghost:hover:not(:disabled) { color: var(--ink); border-color: transparent
 .ws-preview .frame { position: relative; border-radius: var(--r); overflow: hidden; line-height: 0;
   border: 1px solid var(--line); background: var(--bg-tint); }
 .ws-preview .frame img.base { width: 100%; max-height: 50vh; object-fit: contain; display: block; }
-.ws-preview .frame .heat { position: absolute; inset: 0; width: 100%; height: 100%; mix-blend-mode: multiply; }
+.ws-preview .frame .heat { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; }
 .frame-badge.orig { background: var(--ink-soft); }
 .frame-badge.dead { background: var(--muted); }
 
