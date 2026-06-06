@@ -33,6 +33,48 @@
 
 ---
 
+## Sponsor Strategy (tiers)
+
+3 well-integrated sponsors already maxes the 15-pt criterion. Extra sponsors = prize eligibility, not more points. Lock the core, add by cheapest-risk-per-prize, never let one derail the demo.
+
+| Tier | Sponsor | Role | When |
+|---|---|---|---|
+| **1 Core** | **Gemini** | Image editing + agent reasoning (the engine) | Now |
+| **1 Core** | **LangChain** | Multi-agent orchestration (= the track) | Now |
+| **2 Commit** | **Pinecone** | Competitor-ad memory / RAG → competitive-analysis agent | Once core loop works (~1:15) |
+| **3 Polish** | **Clerk** | Drop-in auth / team workspaces (~20 min, low risk) | If green ~2:00 |
+| **3 Stretch** | **Gemini Live API** | Voice interface to the optimizer — high wow, needs mic+websockets | Only if core + Pinecone solid (~2:00) |
+| **3 Stretch** | **Sendblue** | iMessage the winning variant for approval | Last, if time |
+| build tool | **Cursor** | Coding in it — free mention, no work | — |
+
+**Commit to 4 (Gemini, LangChain, Pinecone, Clerk); Gemini Live + Sendblue are stretch.** Never let a stretch sponsor threaten the before/after money shot.
+
+---
+
+## Work Split & Ownership (2 people)
+
+**Own directories, not phases.** Avoids blocking and merge conflicts.
+
+**🔧 Person A — Engine (owns `backend/`)**
+1. DeepGaze runner: heatmap + `attention_score` (DERISK FIRST)
+2. FastAPI `/predict`, `/edit`, `/agents`
+3. Gemini edit wrapper → LangChain leader + agents → Pinecone seed + competitive analysis
+
+**🎨 Person B — Interface (owns `frontend/`)**
+1. Vite + React Flow scaffold
+2. Upload + image + heatmap overlay
+3. Scanpath nodes + live agent-pipeline canvas
+4. Before/after score display (the money shot UI)
+
+**🔑 Anti-collision protocol:**
+- **First 15 min, together:** lock the **API contract** (endpoints + JSON, from the Data Contract below). Freeze it; change only by mutual agreement.
+- Person B builds against a **static mock JSON** so the frontend never waits on the backend.
+- Integrate at TWO checkpoints only: **~1:15** wire FE → `/predict` + `/edit`; **~2:00** wire `/agents`.
+- Cloud agents take sub-tasks *within* each lane (e.g. A's agent seeds Pinecone while A builds DeepGaze).
+- Commit + push small and often; pull before push (see CLAUDE.md).
+
+---
+
 ## Architecture Spec
 
 **Goal:** Upload ad image → predict where eyes look (DeepGaze) → agents edit image (Gemini "Nano Banana") to pull attention toward the brand target (logo/CTA) → prove it with a before/after attention score.
