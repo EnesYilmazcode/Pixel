@@ -3,15 +3,24 @@
 Uses DeepGaze IIE when torch + weights are present; otherwise a cheap edge+center
 saliency so the server always runs (demo-safe). All scoring is dimension-invariant
 (normalized boxes, density re-normalized) per PLAN.md's critical-risk note.
+
+Public surface (consumed by main.py / agents.py / gemini.py — keep stable):
+    predict(image, target_box=None) -> dict        full /predict payload
+    score_only(image, target_box) -> float         cheap re-score for the agent loop
+    to_data_url(image) -> str                       PNG data URL for variants
+    align_to_input(edited, in_w, in_h) -> Image     dimension-fix for before/after
+    attention_in_box(density, nbox) -> float
+    integrity_ok(...) -> bool
 """
 from __future__ import annotations
 
 import base64
 import io
+import os
 
 import numpy as np
 from PIL import Image, ImageOps
-from scipy.ndimage import gaussian_filter, sobel
+from scipy.ndimage import gaussian_filter, sobel, zoom
 
 Box = list[float]  # normalized [x, y, w, h]
 _CENTER_BOX: Box = [0.35, 0.35, 0.30, 0.30]
@@ -19,6 +28,8 @@ _CENTER_BOX: Box = [0.35, 0.35, 0.30, 0.30]
 _model = None    # lazy DeepGaze IIE handle; None until first (successful) load
 _device = None   # torch device once the model loads
 _MODEL_MAX = 1024  # downscale long side before the model (CPU speed; scoring is normalized)
+
+_CENTERBIAS_PATH = os.path.join(os.path.dirname(__file__), "models", "centerbias_mit1003.npy")
 
 
 # --- dimension-fix helpers (see PLAN.md → Critical Build Risk) -------------------
@@ -65,13 +76,18 @@ def _fallback_density(arr: np.ndarray) -> np.ndarray:
     return d / (d.sum() + 1e-9)
 
 
-def _gaussian_centerbias(h: int, w: int) -> np.ndarray:
-    """Log-density center prior — DeepGaze requires a centerbias input. A Gaussian
-    prior avoids depending on a downloadable MIT1003 file (and works fine)."""
+def _centerbias(h: int, w: int) -> np.ndarray:
+    """Log-density center prior — DeepGaze requires a centerbias input. Uses the
+    MIT1003 centerbias file when present (most faithful), else a Gaussian prior so we
+    never hard-depend on a download."""
     from scipy.special import logsumexp
-    yy, xx = np.mgrid[0:h, 0:w]
-    g = -(((xx - w / 2) / (w * 0.5)) ** 2 + ((yy - h / 2) / (h * 0.5)) ** 2)
-    return g - logsumexp(g)
+    try:
+        cb = np.load(_CENTERBIAS_PATH)
+        cb = zoom(cb, (h / cb.shape[0], w / cb.shape[1]), order=1, mode="nearest")
+    except Exception:
+        yy, xx = np.mgrid[0:h, 0:w]
+        cb = -(((xx - w / 2) / (w * 0.5)) ** 2 + ((yy - h / 2) / (h * 0.5)) ** 2)
+    return cb - logsumexp(cb)
 
 
 def _density(arr: np.ndarray) -> np.ndarray:
@@ -93,7 +109,7 @@ def _density(arr: np.ndarray) -> np.ndarray:
 
         sh, sw = small.shape[:2]
         img_t = torch.tensor(small.transpose(2, 0, 1)[None]).float().to(_device)
-        cb_t = torch.tensor(_gaussian_centerbias(sh, sw)[None]).float().to(_device)
+        cb_t = torch.tensor(_centerbias(sh, sw)[None]).float().to(_device)
         with torch.no_grad():
             log_density = _model(img_t, cb_t)
         d = np.exp(log_density[0, 0].cpu().numpy())
@@ -122,43 +138,51 @@ def to_data_url(image: Image.Image) -> str:
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
-def _top_distractors(density: np.ndarray, target: Box, k: int = 2) -> list[dict]:
-    """Highest-attention grid cells outside the target, as normalized callouts."""
-    rows, cols = 4, 6
+def _label(ny: float, nx: float) -> str:
+    """Human-readable position of a normalized point, for demo callouts."""
+    vert = "upper" if ny < 1 / 3 else "lower" if ny > 2 / 3 else "middle"
+    horz = "left" if nx < 1 / 3 else "right" if nx > 2 / 3 else "center"
+    return f"{vert}-{horz} region"
+
+
+def _top_distractors(density: np.ndarray, target: Box, k: int = 2,
+                     sigma_frac: float = 0.10) -> list[dict]:
+    """Highest-attention peaks OUTSIDE the target, localized precisely via greedy
+    peak-pick with Gaussian inhibition-of-return, then labelled by position."""
     h, w = density.shape
-    total = density.sum() + 1e-9
-    cells = []
-    for r in range(rows):
-        for c in range(cols):
-            y0, y1 = r * h // rows, (r + 1) * h // rows
-            x0, x1 = c * w // cols, (c + 1) * w // cols
-            nbox = [x0 / w, y0 / h, (x1 - x0) / w, (y1 - y0) / h]
-            share = float(density[y0:y1, x0:x1].sum() / total)
-            cells.append((share, nbox, _label(r, c, rows, cols)))
-    tx, ty = target[0] + target[2] / 2, target[1] + target[3] / 2
-    cells = [c for c in cells if not (c[1][0] <= tx <= c[1][0] + c[1][2]
-                                      and c[1][1] <= ty <= c[1][1] + c[1][3])]
-    cells.sort(reverse=True)
-    return [{"region": nbox, "share": round(share, 3), "desc": desc}
-            for share, nbox, desc in cells[:k]]
+    d = density.astype(np.float64).copy()
+    sigma = sigma_frac * max(h, w)
+    half = sigma_frac  # half-extent of the reported region, normalized
+    yy, xx = np.ogrid[:h, :w]
+    tx, ty, tw, th = target
+    out: list[dict] = []
+    for _ in range(k + 4):  # over-sample, then drop peaks that fall inside the target
+        y, x = np.unravel_index(int(d.argmax()), d.shape)
+        nx, ny = x / w, y / h
+        region = [round(max(0.0, nx - half), 4), round(max(0.0, ny - half), 4),
+                  round(min(1.0, 2 * half), 4), round(min(1.0, 2 * half), 4)]
+        share = round(attention_in_box(density, region), 3)
+        inside = (tx <= nx <= tx + tw) and (ty <= ny <= ty + th)
+        if not inside and share > 0.02:
+            out.append({"region": region, "share": share, "desc": _label(ny, nx)})
+        d = np.clip(d - d[y, x] * np.exp(-(((xx - x) ** 2 + (yy - y) ** 2) / (2 * sigma ** 2))), 0, None)
+        if len(out) >= k:
+            break
+    return out
 
 
-def _label(r: int, c: int, rows: int, cols: int) -> str:
-    v = "upper" if r < rows / 3 else "lower" if r > 2 * rows / 3 else "middle"
-    hzt = "left" if c < cols / 3 else "right" if c > 2 * cols / 3 else "center"
-    return f"{v}-{hzt} region"
-
-
-def _scanpath(density: np.ndarray, n: int = 5) -> list[dict]:
-    """Greedy peaks (suppress a neighborhood after each pick) as an ordered gaze path."""
-    d = density.copy()
-    h, w = d.shape
+def _scanpath(density: np.ndarray, n: int = 5, sigma_frac: float = 0.08) -> list[dict]:
+    """Ordered fixation nodes: greedy peaks with Gaussian inhibition-of-return — a
+    near-free stand-in for DeepGaze III scanpath that spreads nodes naturally."""
+    h, w = density.shape
+    d = density.astype(np.float64).copy()
+    sigma = sigma_frac * max(h, w)
+    yy, xx = np.ogrid[:h, :w]
     out = []
     for order in range(1, n + 1):
         y, x = np.unravel_index(int(d.argmax()), d.shape)
         out.append({"x": round(x / w, 3), "y": round(y / h, 3), "order": order})
-        ry, rx = h // 8, w // 8
-        d[max(0, y - ry):y + ry, max(0, x - rx):x + rx] = 0
+        d = np.clip(d - d[y, x] * np.exp(-(((xx - x) ** 2 + (yy - y) ** 2) / (2 * sigma ** 2))), 0, None)
     return out
 
 
@@ -182,3 +206,20 @@ def predict(image: Image.Image, target_box: Box | None = None) -> dict:
 def score_only(image: Image.Image, target_box: Box) -> float:
     """Cheap attention-on-target score (used by the agent loop's re-score step)."""
     return round(attention_in_box(_density(np.asarray(image.convert("RGB"))), target_box), 4)
+
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1:
+        img = Image.open(sys.argv[1]).convert("RGB")
+    else:  # synthetic image so the pipeline can be smoke-tested without assets
+        arr = np.zeros((480, 640, 3), np.uint8)
+        arr[120:260, 380:560] = (220, 40, 40)  # a bright "product" block
+        img = Image.fromarray(arr)
+
+    rep = predict(img, [0.6, 0.25, 0.3, 0.3])
+    in_range = 0 <= rep["attention_score"] <= 1
+    print(f"size={rep['width']}x{rep['height']} score={rep['attention_score']} in[0,1]={in_range}")
+    print(f"scanpath nodes={len(rep['scanpath'])} distractors={len(rep['distractors'])}")
+    print(f"heatmap data-url ok={rep['heatmap_png'].startswith('data:image/png;base64,')}")
