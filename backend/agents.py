@@ -17,14 +17,26 @@ import gemini
 from config import settings
 
 
+# Per-brand caches: briefs + competitor tactics don't change between clicks, so the
+# first run pays the Gemini/Pinecone cost and every later run on that brand is instant.
+_BRIEF_CACHE: dict[str, dict] = {}
+_SCOUT_CACHE: dict[str, dict] = {}
+
+
 def insider(brand: str) -> dict:
-    """Insider agent — our-brand brief (real Gemini call, neutral fallback)."""
-    return gemini.brand_brief(brand)
+    """Insider agent — our-brand brief (cached per brand; real Gemini call on first use)."""
+    key = brand.strip().lower()
+    if key not in _BRIEF_CACHE:
+        _BRIEF_CACHE[key] = gemini.brand_brief(brand)
+    return _BRIEF_CACHE[key]
 
 
 def scout(brand: str, brief: dict) -> dict:
-    """Scout agent — competitor tactics via Pinecone RAG (see competitive.py)."""
-    return competitive.scout(brand, brief)
+    """Scout agent — competitor tactics via Pinecone RAG (cached per brand)."""
+    key = brand.strip().lower()
+    if key not in _SCOUT_CACHE:
+        _SCOUT_CACHE[key] = competitive.scout(brand, brief)
+    return _SCOUT_CACHE[key]
 
 
 def _directive_pool(before: dict, insights: dict, brand: str) -> list[str]:
