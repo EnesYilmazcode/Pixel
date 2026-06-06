@@ -66,6 +66,34 @@ export async function predict(file: File, target?: Box): Promise<PredictResult> 
   return r.json();
 }
 
+// One incremental optimization branch: edit the CURRENT best creative once, re-score, judge.
+export type StepResult = {
+  step: number;
+  directive: string;
+  variant_png: string;
+  current_score: number;
+  new_score: number;
+  delta: number;
+  judge: number;
+  judge_reason: string;
+  vetoed: boolean;
+  improved: boolean;
+  n_directives: number;
+};
+
+export async function optimizeStep(
+  image: File, brand: string, step: number, target?: Box,
+): Promise<StepResult> {
+  const fd = new FormData();
+  fd.append("image", image);            // the current best creative (original on step 0)
+  fd.append("brand", brand);
+  fd.append("step", String(step));
+  if (target) fd.append("target", JSON.stringify(target));
+  const r = await fetch("/optimize/step", { method: "POST", body: fd });
+  if (!r.ok) throw new Error(`/optimize/step ${r.status}`);
+  return r.json();
+}
+
 export async function runAgents(file: File, brand: string, target?: Box): Promise<AgentsResult> {
   if (USE_MOCK_AGENTS) return mock.agents as AgentsResult;
   const fd = new FormData();

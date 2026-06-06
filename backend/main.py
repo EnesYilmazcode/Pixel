@@ -79,6 +79,56 @@ async def run_agents(image: UploadFile = File(...), brand: str = Form("the brand
     return agents.run(await _image(image), brand, box)
 
 
+def _stepwise_order(pool: list[str]) -> list[str]:
+    """Rank directives so the first branches are the most reliable attention-raisers.
+    0 = amplify the brand (enlarge/brighten/add CTA), 1 = neutral, 2 = risky/structural."""
+    def rank(d: str) -> int:
+        head = d.lower().lstrip()  # rank by the leading verb, not mid-sentence words
+        if head.startswith(("add", "enlarge", "clearly enlarge", "boost", "make", "brighten")):
+            return 0  # amplify the brand — most reliable lift
+        if head.startswith(("remove", "reframe", "recolor", "clearly tone", "tone")):
+            return 2  # structural / risky — can regress, try later
+        return 1
+    return sorted(pool, key=rank)
+
+
+@app.post("/optimize/step")
+async def optimize_step(image: UploadFile = File(...), brand: str = Form("the brand"),
+                        target: str | None = Form(None), step: int = Form(0)) -> dict:
+    """One branch at a time. `image` is the CURRENT best creative (the original on step 0);
+    the frontend re-sends the adopted winner each step. We run a single Nano Banana edit
+    (next directive in the pool), re-score with DeepGaze, and Judge it. The frontend shows
+    this one branch and asks the user whether to spawn another."""
+    img = await _image(image)
+    box = json.loads(target) if target else None
+    before = dg.predict(img, box)
+    tbox = box or before["target_box"]
+    current = before["attention_score"]
+
+    # One branch at a time, so ORDER matters (the parallel search hid bad directives by
+    # keeping the best of N). Lead with "amplify the brand" edits — reliably raise attention —
+    # before the riskier structural ones (remove/reframe/recolor) that can regress.
+    pool = _stepwise_order(agents._directive_pool(before, {}, brand))
+    directive = pool[step % len(pool)]
+    variant, desc = gemini.edit_image(img, directive)
+    new_score = dg.score_only(variant, tbox)
+    quality, reason = gemini.judge(variant, brand)
+    vetoed = quality < gemini.settings.judge_gate
+    return {
+        "step": step,
+        "directive": desc,
+        "variant_png": dg.to_data_url(variant),
+        "current_score": round(current, 4),
+        "new_score": round(new_score, 4),
+        "delta": round(new_score - current, 4),
+        "judge": round(quality, 3),
+        "judge_reason": reason,
+        "vetoed": vetoed,
+        "improved": bool(new_score > current and not vetoed),
+        "n_directives": len(pool),
+    }
+
+
 # --- Campaigns: save / list / resume / optimize ---------------------------------
 @app.post("/campaigns")
 async def create_campaign(image: UploadFile = File(...), name: str = Form(""),
