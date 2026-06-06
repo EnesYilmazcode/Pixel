@@ -1,0 +1,19 @@
+# Core — server runs with just these (DeepGaze falls back to a cheap saliency if torch absent)
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+pillow
+numpy
+scipy
+google-genai
+
+# Vision — real DeepGaze (heavier; install to activate the true gaze model)
+# torch --index-url https://download.pytorch.org/whl/cpu
+# git+https://github.com/matthias-k/DeepGaze.git
+
+# Agents / memory / observability — Phase 2
+# langchain
+# langchain-google-genai
+# pinecone
+# langsmith
