@@ -1,0 +1,59 @@
+// API client + types. Matches the frozen contract in WORK_ALLOCATION.md.
+// Flip USE_MOCK to false once Instance A's /predict + /edit are live.
+import mock from "./mock.json";
+
+export const USE_MOCK = true;
+
+export type Box = [number, number, number, number]; // normalized x,y,w,h
+export type Distractor = { region: Box; share: number; desc: string };
+export type Fixation = { x: number; y: number; order: number };
+
+export type PredictResult = {
+  width: number;
+  height: number;
+  attention_score: number;
+  heatmap_png: string; // data URL ("" in mock -> CSS fallback overlay)
+  target_box: Box;
+  scanpath: Fixation[];
+  distractors: Distractor[];
+};
+
+export type EditResult = {
+  variant_png: string;
+  edit_description: string;
+  width: number;
+  height: number;
+};
+
+export type AgentStep = { agent: string; status: string; summary?: string };
+export type AgentsResult = {
+  baseline_score: number;
+  final_score: number;
+  delta: number;
+  brand_brief?: Record<string, unknown>;
+  competitive_insights?: { tactics: unknown[] };
+  heatmap_before: string;
+  heatmap_after: string;
+  variant_png: string;
+  rationale: string;
+  iterations: AgentStep[];
+};
+
+export async function predict(file: File): Promise<PredictResult> {
+  if (USE_MOCK) return mock.predict as PredictResult;
+  const fd = new FormData();
+  fd.append("image", file);
+  const r = await fetch("/predict", { method: "POST", body: fd });
+  if (!r.ok) throw new Error(`/predict ${r.status}`);
+  return r.json();
+}
+
+export async function runAgents(file: File, brand: string): Promise<AgentsResult> {
+  if (USE_MOCK) return mock.agents as AgentsResult;
+  const fd = new FormData();
+  fd.append("image", file);
+  fd.append("brand", brand);
+  const r = await fetch("/agents", { method: "POST", body: fd });
+  if (!r.ok) throw new Error(`/agents ${r.status}`);
+  return r.json();
+}

@@ -1,0 +1,41 @@
+{
+  "predict": {
+    "width": 1024,
+    "height": 768,
+    "attention_score": 0.12,
+    "heatmap_png": "",
+    "target_box": [0.62, 0.55, 0.28, 0.34],
+    "scanpath": [
+      { "x": 0.3, "y": 0.28, "order": 1 },
+      { "x": 0.52, "y": 0.34, "order": 2 },
+      { "x": 0.41, "y": 0.6, "order": 3 },
+      { "x": 0.72, "y": 0.68, "order": 4 }
+    ],
+    "distractors": [
+      { "region": [0.22, 0.18, 0.26, 0.3], "share": 0.38, "desc": "model's face" },
+      { "region": [0.04, 0.04, 0.18, 0.12], "share": 0.14, "desc": "background text" }
+    ]
+  },
+  "agents": {
+    "baseline_score": 0.12,
+    "final_score": 0.41,
+    "delta": 0.29,
+    "brand_brief": { "audience": "18-30 urban", "tone": "bold, joyful", "palette": ["#F40009", "#FFFFFF"] },
+    "competitive_insights": {
+      "tactics": [
+        { "tactic": "high-contrast CTA", "evidence": "Pepsi 2023", "apply": "boost CTA saturation" }
+      ]
+    },
+    "heatmap_before": "",
+    "heatmap_after": "",
+    "variant_png": "",
+    "rationale": "Dimmed the model's face (was stealing 38% of attention) and boosted the can's contrast, pulling fixation toward the product and CTA.",
+    "iterations": [
+      { "agent": "Insider", "status": "done", "summary": "Brand brief: bold, red-dominant, product-forward." },
+      { "agent": "Scout", "status": "done", "summary": "Pepsi wins with high-contrast CTAs; our can is low-contrast." },
+      { "agent": "Eye", "status": "done", "summary": "Baseline: 12% on can, 38% on face." },
+      { "agent": "Retoucher", "status": "done", "summary": "Dimmed face, boosted can contrast +20%." },
+      { "agent": "Eye", "status": "done", "summary": "Re-score: 41% on can." }
+    ]
+  }
+}
