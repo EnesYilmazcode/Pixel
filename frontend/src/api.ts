@@ -30,7 +30,16 @@ export type EditResult = {
 };
 
 export type AgentStep = { agent: string; status: string; summary?: string };
+export type TreeNode = {
+  id: number;
+  parent: number | null;
+  depth: number;
+  score: number;
+  status: "root" | "alive" | "dead" | "pruned" | "best";
+  directive: string;
+};
 export type AgentsResult = {
+  tree?: TreeNode[];
   baseline_score: number;
   final_score: number;
   delta: number;

@@ -284,6 +284,13 @@ button.ghost:hover:not(:disabled) { color: var(--ink); border-color: transparent
 }
 .frame { position: relative; line-height: 0; border-radius: var(--r); overflow: hidden; }
 .frame img.base { max-width: 100%; max-height: 64vh; display: block; }
+.frame-badge {
+  position: absolute; top: 12px; left: 12px; z-index: 3;
+  background: var(--good); color: #fff;
+  font: 600 11px var(--font-mono); letter-spacing: 0.04em;
+  padding: 4px 10px; border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25); animation: fade .5s both;
+}
 .heat {
   position: absolute; inset: 0; width: 100%; height: 100%;
   mix-blend-mode: multiply; pointer-events: none;
@@ -370,6 +377,40 @@ button.ghost:hover:not(:disabled) { color: var(--ink); border-color: transparent
 .row .thief { color: var(--accent-ink); }
 .bar { height: 5px; border-radius: 3px; background: var(--bg-tint); overflow: hidden; margin-top: 8px; }
 .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+
+/* branch search tree — columns per round, nodes reveal in sequence */
+.tree { display: flex; gap: 22px; align-items: flex-start; overflow-x: auto; padding: 4px 2px 6px; }
+.tcol { display: flex; flex-direction: column; gap: 10px; min-width: 130px; position: relative; }
+.tcol-h {
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--faint); margin-bottom: 2px;
+}
+/* connector rail into every non-first column */
+.tcol + .tcol::before {
+  content: ""; position: absolute; left: -22px; top: 30px; bottom: 14px; width: 1px;
+  background: var(--line-strong);
+}
+.tnode {
+  position: relative;
+  border: 1px solid var(--line-strong); border-radius: 10px;
+  background: var(--panel); padding: 9px 11px;
+  animation: pop .4s both; box-shadow: var(--shadow);
+}
+.tcol + .tcol .tnode::before {
+  content: ""; position: absolute; left: -22px; top: 50%; width: 22px; height: 1px;
+  background: var(--line-strong);
+}
+.tnode .tscore { font-family: var(--font-mono); font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; }
+.tnode .tdir { color: var(--muted); font-size: 11px; line-height: 1.3; margin-top: 2px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tnode .tstat { font-family: var(--font-mono); font-size: 10px; margin-top: 5px; font-weight: 600; }
+.tnode.root { border-color: var(--line-strong); background: var(--bg-tint); }
+.tnode.best { border-color: var(--good); box-shadow: 0 0 0 1px var(--good), var(--shadow); }
+.tnode.best .tscore, .tnode.best .tstat { color: var(--good); }
+.tnode.dead { opacity: 0.5; border-style: dashed; }
+.tnode.dead .tscore { color: var(--muted); text-decoration: line-through; }
+.tnode.dead .tstat { color: var(--accent-ink); }
+.tnode.alive .tstat { color: var(--muted); }
 
 .pipe .step {
   display: flex; gap: 11px; padding: 10px 0; border-top: 1px solid var(--line);
