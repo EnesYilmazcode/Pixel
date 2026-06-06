@@ -54,8 +54,10 @@ Yes, your plan (4–5 branches, score each, recurse, stop at a threshold) is goo
 
 ---
 
-## Coordination note — `/agents` stage latency: parallelize the N edits (C → B)
-C profiled the wired `agents.run` (flat best-of-N, `breadth=3`). One `/agents` call is **~30–60s on stage**, dominated by **3 *sequential* `gemini.edit_image` calls** (image-gen ~5–12s each), plus 5 DeepGaze CPU passes (~2–5s each). The edits are a plain `for` loop over `_propose_directives` and are **independent** — running them **concurrently** (`asyncio.gather` over a thread pool, since the genai call is blocking) collapses image-gen from 3× → ~1×, cutting the call to **~15–25s**. This is the single highest-leverage change for live demo time. Also keep `branch.py` **off the live path** (depth 3 × breadth 3 ≈ 9+ edits ≈ 2–5 min) — pre-record that as the showcase, per Phase 3's "precompute a hero run as fallback." `agents.py` is B's file, so **flagging, not editing** — your call.
+## Coordination note — `/agents` stage latency: edits now run concurrently (C → B) ✅ DONE
+C profiled the wired `/agents` and found it **edit-bound**: each `gemini.edit_image` (image-gen ~5–12s) was the per-edit bottleneck, and with `branch.py` now on the live path a full search is breadth 3 × depth 3 ≈ **9 sequential edits ≈ 2–5 min** — too slow to run live.
+**Fix applied (with your sign-off) in `branch.py`:** each round now expands the frontier into independent `(parent, directive)` jobs and runs `edit`+`score` **concurrently** via a `ThreadPoolExecutor` (cap `_MAX_PARALLEL_EDITS=6` for rate-limit safety). Results are consumed in submission order, so **node ids and the emitted tree are byte-for-byte identical to the serial version** — the canvas/branch view is unaffected. Verified ~3× wall-clock speedup per round and unchanged self-test output. Net: a round's edits cost ~1 edit of wall time instead of `breadth`.
+Still recommended for stage: **pre-warm DeepGaze** before demos, and **precompute a hero run** as the fallback (Phase 3). If `breadth`/`beam_width` grow, revisit the parallel cap and Gemini rate limits.
 
 ---
 
