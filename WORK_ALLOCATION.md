@@ -41,8 +41,12 @@
   "brand_brief": {...}, "competitive_insights": {"tactics":[...]},
   "heatmap_before": "data:...", "heatmap_after": "data:...",
   "variant_png": "data:...", "rationale": "…",
-  "iterations": [ {"agent":"Scout","status":"done","summary":"…"} ] }
+  "iterations": [ {"agent":"Scout","status":"done","summary":"…"} ],
+  "tree": [ {"id":0,"parent":null,"depth":0,"score":0.12,"status":"root","directive":"original"},
+            {"id":1,"parent":0,"depth":1,"score":0.31,"status":"best","directive":"dim the face…"},
+            {"id":2,"parent":0,"depth":1,"score":0.09,"status":"dead","directive":"…"} ] }
 ```
+> `tree` = branch-search nodes for the canvas variant view. `status` ∈ root|alive|dead|pruned|best (dead = didn't beat its parent). Optional — frontend ignores it if not rendering the tree yet.
 > `/agents` is **synchronous** → the canvas replays `iterations[]` client-side (timed reveal), no streaming. Source of truth: `backend/schemas.py` + `frontend/src/mock.json` (keep in sync).
 
 ## Env layout

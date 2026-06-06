@@ -42,6 +42,15 @@ class AgentStep(BaseModel):
     summary: str = ""
 
 
+class TreeNode(BaseModel):
+    id: int
+    parent: int | None
+    depth: int
+    score: float
+    status: str  # root | alive | dead | pruned | best
+    directive: str = ""
+
+
 class AgentsResult(BaseModel):
     baseline_score: float
     final_score: float
@@ -52,4 +61,5 @@ class AgentsResult(BaseModel):
     heatmap_after: str = ""
     variant_png: str = ""
     rationale: str = ""
+    tree: list[TreeNode] = []  # branch search nodes (for the canvas variant tree)
     iterations: list[AgentStep] = []

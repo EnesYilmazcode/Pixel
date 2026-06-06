@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from PIL import Image
 
+import branch
 import competitive
 import deepgaze_runner as dg
 import gemini
@@ -24,43 +25,57 @@ def scout(brand: str, brief: dict) -> dict:
     return competitive.scout(brand, brief)
 
 
-def _propose_directives(before: dict, insights: dict, n: int) -> list[str]:
-    """N diverse edit hypotheses — each branch tests a different idea."""
-    out = []
-    if before["distractors"]:
-        out.append(f"reduce the visual weight of the {before['distractors'][0]['desc']} "
-                   "so it stops drawing the eye")
-    out += [t["apply"] for t in insights.get("tactics", [])]
-    out.append("increase the contrast and saturation of the main product so it is the clear focal point")
+def _directive_pool(before: dict, insights: dict) -> list[str]:
+    """Diverse edit hypotheses the branch search draws from — each a different avenue."""
+    pool = [f"reduce the visual weight of the {d['desc']} so it stops drawing the eye"
+            for d in before["distractors"]]
+    pool += [t["apply"] for t in insights.get("tactics", [])]
+    pool += [
+        "increase the contrast and saturation of the main product so it is the clear focal point",
+        "dim and slightly blur the background so the product separates from it",
+    ]
     seen, uniq = set(), []
-    for d in out:
+    for d in pool:
         if d and d not in seen:
             seen.add(d)
             uniq.append(d)
-    return uniq[: max(1, n)]
+    return uniq
+
+
+def _serialize_tree(tree: list[dict]) -> list[dict]:
+    return [{"id": n["id"], "parent": n["parent"], "depth": n["depth"], "score": n["score"],
+             "status": n["status"],
+             "directive": str(n["directive"])[:80]} for n in tree]
 
 
 def run(image: Image.Image, brand: str = "the brand") -> dict:
-    """Single-round best-of-N: try N edits, keep the best that beats baseline.
-    Never regresses (the original is the floor) — the score only ever goes up."""
+    """Branching tree-search: explore edits over several rounds, kill the ones that
+    don't improve, grow the best. Never regresses (the original is the floor)."""
     target = gemini.detect_target(image)
     before = dg.predict(image, target)
     baseline = before["attention_score"]
     brief = insider(brand)
     insights = scout(brand, brief)
 
-    # Retoucher proposes + applies N edits; Eye scores each; keep the best.
-    best = {"score": baseline, "img": image, "desc": "kept original (no edit beat baseline)"}
-    for directive in _propose_directives(before, insights, settings.breadth):
-        variant, desc = gemini.edit_image(image, directive)
-        score = dg.score_only(variant, target)
-        if score > best["score"]:
-            best = {"score": score, "img": variant, "desc": desc}
+    pool = _directive_pool(before, insights)
 
-    improved = best["img"] is not image
-    after = dg.predict(best["img"], target) if improved else before
+    def propose(_img, node, n):
+        start = (node["depth"] * n) % len(pool)  # rotate so each round tries fresh avenues
+        return (pool[start:] + pool[:start])[:n]
+
+    result = branch.search(
+        image, baseline, propose,
+        edit=lambda img, directive: gemini.edit_image(img, directive),
+        score=lambda variant: dg.score_only(variant, target),
+        breadth=settings.breadth, max_depth=settings.max_depth, beam_width=1,
+        target_score=settings.target_score, epsilon=settings.epsilon,
+    )
+
+    best_img = result["best_image"]
+    after = dg.predict(best_img, target) if result["improved"] else before
     final = after["attention_score"]
     thief = before["distractors"][0]["desc"] if before["distractors"] else "competing elements"
+    n_variants = sum(1 for n in result["tree"] if n["parent"] is not None)
 
     steps = [
         {"agent": "Insider", "status": "done", "summary": f"{brand}: {brief.get('tone', '')}"[:90]},
@@ -68,7 +83,7 @@ def run(image: Image.Image, brand: str = "the brand") -> dict:
          "summary": insights["tactics"][0]["tactic"] if insights.get("tactics") else "no tactics"},
         {"agent": "Eye", "status": "done", "summary": f"baseline {round(baseline * 100)}% on target"},
         {"agent": "Retoucher", "status": "done",
-         "summary": f"tried {settings.breadth} edits; best: {best['desc']}"[:110]},
+         "summary": f"explored {n_variants} edits across {result['rounds']} rounds"},
         {"agent": "Eye", "status": "done", "summary": f"best {round(final * 100)}% on target"},
     ]
 
@@ -80,8 +95,9 @@ def run(image: Image.Image, brand: str = "the brand") -> dict:
         "competitive_insights": insights,
         "heatmap_before": before["heatmap_png"],
         "heatmap_after": after["heatmap_png"],
-        "variant_png": dg.to_data_url(best["img"]),
-        "rationale": (f"Reduced the {thief} and amplified the brand target; "
-                      f"kept the best of {settings.breadth} agent edits."),
+        "variant_png": dg.to_data_url(best_img),
+        "rationale": (f"Explored {n_variants} edits in a branching search; kept the variant that "
+                      f"best reduced the {thief} and raised attention on the target."),
+        "tree": _serialize_tree(result["tree"]),
         "iterations": steps,
     }
