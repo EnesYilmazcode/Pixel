@@ -77,16 +77,31 @@ The only thing that must work: **upload real ad → DeepGaze heatmap + score →
 
 **Goal:** Upload ad image → predict where eyes look (DeepGaze) → agents edit image (Gemini "Nano Banana") to pull attention toward the brand target (logo/CTA) → prove it with a before/after attention score.
 
-### Agent roster
-| Agent | Single Responsibility | Inputs | Outputs |
-|---|---|---|---|
-| **Leader (Orchestrator)** | Run the loop, decide which edit to apply next, decide when to stop. | `image`, `brand`, `target` | `winning_variant`, score history, rationale |
-| **Brand Understanding** | Brand brief: product, audience, tone, colors, target to amplify. | `brand`, optional assets | `BrandBrief` |
-| **Competitive Analysis** | What competitors/own past ads do well/poorly → "winning patterns." | `brand`, `BrandBrief` | `CompetitiveInsights` (3–5 tactics) |
-| **Gaze Analysis** | Run DeepGaze IIE + III, compute attention metric on target. | `image`, `target_region` | `GazeReport` (heatmap, scanpath, score, distractors) |
-| **Creative Editor** | Turn insights + gaze gaps into one Gemini edit, apply, re-score. | `image`, briefs, `GazeReport`, `edit_directive` | `variant_image`, `edit_description` |
+### Agent fleet (LOCKED — don't invent new agents mid-build)
 
-### Orchestration flow (Leader's sequence)
+**6 agents, with memorable display names for the canvas.** Backend tool names (in parens) stay stable so the API contract doesn't churn. Build the 5 MVP agents first; **Judge** is stretch (turns on only with branching).
+
+| # | Canvas name | Role | Single Responsibility | Inputs | Outputs | Model/Tool | Tier |
+|---|---|---|---|---|---|---|---|
+| 1 | **Director** | Leader / Orchestrator | Run the loop; fuse gaze leaks + tactics + brand rules into ONE `edit_directive`; decide loop/stop. | `image`, `brand`, `target` | `winning_variant`, score history, rationale | Gemini (AgentExecutor) | MVP |
+| 2 | **Insider** | Brand Understanding (*"our own"*) | Brief on **our** brand: product, audience, tone, palette, target to amplify, do's/don'ts. | `brand`, optional assets | `BrandBrief` | Gemini (`analyze_brand`) | MVP |
+| 3 | **Scout** | Competitive Analysis (*"dark horse"*) | What **competitors** + our past ads do well/poorly → 3–5 "winning patterns." | `brand`, `BrandBrief` | `CompetitiveInsights` | Pinecone RAG → Gemini (`competitive_insights`) | MVP |
+| 4 | **Eye** | Gaze Analysis | DeepGaze IIE + III; compute attention-on-target + distractors. | `image`, `target_region` | `GazeReport` (heatmap, scanpath, score, distractors) | DeepGaze (`score_gaze`) | MVP |
+| 5 | **Retoucher** | Creative Editor | Turn `edit_directive` into ONE Gemini edit, apply, hand back for re-score. | `image`, briefs, `GazeReport`, `edit_directive` | `variant_image`, `edit_description` | Gemini image (`edit_image`) | MVP |
+| 6 | **Judge** | Critic (*NEW*) | Score/compare branch variants, enforce brand do's/don'ts, pick the winner. | `variants[]`, `BrandBrief`, scores | `winner`, per-variant verdict + reason | Gemini (`judge_variants`) | **Stretch** (with branching) |
+
+**Why these six:** **Insider** (us) + **Scout** (them) are the two research agents the team wanted; **Eye** is the objective truth; **Director** turns analysis into action; **Retoucher** executes; **Judge** closes the branching loop. No two agents share a responsibility — each is one mockable tool.
+
+### Canvas choreography (this is what wins *Best Multi-Agent **Interface***)
+Agents are **React Flow nodes that light up as they run** — the pipeline IS the interface, not a hidden backend.
+- **Fan-out (parallel):** **Insider** + **Scout** + **Eye (baseline)** fire at once → three nodes pulse simultaneously. Visible parallelism reads as "a team," not a script.
+- **Converge:** edges flow into **Director**, which emits its one-line `edit_directive` as node text — *reasoning made visible*.
+- **Act:** **Retoucher** runs → new image + score animate in; the **before/after number ticks up** (the money shot).
+- **Loop:** Director→Retoucher→Eye loops up to `MAX=3`; each pass adds a node so the graph visibly grows.
+- **Branch + Judge (stretch):** Director fans 2–3 **Retoucher** variants → **Judge** compares → winning edge highlights.
+- **Node states:** grey → pulsing → green, so a judge *sees* the fleet working without reading logs.
+
+### Orchestration flow (Director's sequence)
 1. **Intake** — `image` + `brand` + `target` (if target missing, Gemini detects logo/CTA bbox).
 2. **Brand brief** (parallel) → `BrandBrief`.
 3. **Competitive scan** (parallel, RAG over Pinecone) → `CompetitiveInsights`.
@@ -98,8 +113,8 @@ The only thing that must work: **upload real ad → DeepGaze heatmap + score →
 9. **Report** — best variant, baseline vs final, before/after heatmaps, rationale. *(Stretch: Sendblue.)*
 
 ### LangChain wiring (keep simple)
-- One `AgentExecutor` as **Leader**; sub-agents exposed as **Tools** (not nested agents). Loop is a plain Python `for`. **No LangGraph** — fixed sequence doesn't need it.
-- Tools: `analyze_brand(brand)`, `competitive_insights(brand, brief)`, `score_gaze(image_path, target_region)`, `edit_image(image_path, directive)`.
+- One `AgentExecutor` as **Director** (a.k.a. Leader); sub-agents exposed as **Tools** (not nested agents). Loop is a plain Python `for`. **No LangGraph** — fixed sequence doesn't need it.
+- Tools: `analyze_brand(brand)`, `competitive_insights(brand, brief)`, `score_gaze(image_path, target_region)`, `edit_image(image_path, directive)`, `judge_variants(variants, brief)` *(stretch)*.
 - Gemini for all reasoning + edits; DeepGaze behind `score_gaze`. Tools are trivial to mock/parallelize.
 
 ### Pinecone usage
