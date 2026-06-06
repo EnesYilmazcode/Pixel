@@ -51,27 +51,25 @@
 
 ---
 
-## Work Split & Ownership (2 people)
+## Work Split & Ownership (2 people) — spine-first, then vertical fork
 
-**Own directories, not phases.** Avoids blocking and merge conflicts.
+**Don't split by tier (frontend vs backend).** That's the trap — the FE person mocks for hours and integration happens late and painfully. We DO have two runtimes (Python for DeepGaze — no JS port; React for the node canvas), but that's a *technical* boundary, not how we assign people.
 
-**🔧 Person A — Engine (owns `backend/`)**
-1. DeepGaze runner: heatmap + `attention_score` (DERISK FIRST)
-2. FastAPI `/predict`, `/edit`, `/agents`
-3. Gemini edit wrapper → LangChain leader + agents → Pinecone seed + competitive analysis
+**Phase 1 — Build the spine TOGETHER (now → ~1:00). One vertical, integrated early.**
+The only thing that must work: **upload real ad → DeepGaze heatmap + score → one Gemini edit → re-score → number goes up**, with a dead-simple UI (image + heatmap overlay + the score).
+- One person drives the **Python** side (DeepGaze runner + `/predict` + `/edit`, with the dimension-fix from the Critical Risk section baked in).
+- Other drives the **React shell** (upload, show image, fetch + render heatmap, show score) AND wires it to the real endpoints *as they come up* — tight loop, integrate continuously, not at a checkpoint.
+- Goal: by ~1:00 the money shot works end-to-end on ONE hero ad. Pair on it; this is the demo.
 
-**🎨 Person B — Interface (owns `frontend/`)**
-1. Vite + React Flow scaffold
-2. Upload + image + heatmap overlay
-3. Scanpath nodes + live agent-pipeline canvas
-4. Before/after score display (the money shot UI)
+**Phase 2 — Fork into two verticals (~1:00 → 2:15). Each owns a full slice, separate files.**
+- **Vertical 1 — Polish & proof:** demo hero visuals (heatmap wipe slider, animated score counter, distractor callout), dimension-fix hardening, hero-ad precache, the upload Mode-A path. Owns `App` shell + `components/Heatmap*`.
+- **Vertical 2 — Agent layer & wow:** LangChain leader + Pinecone competitive analysis (`/agents`), the React Flow **agent-pipeline canvas**, LangSmith score chart, voice (Web Speech), Mode-B generate front door. Owns `components/AgentFlow*` + `backend/agents.py`.
+- Cloud agents take sub-tasks *within* a vertical (e.g. seed Pinecone, write the precache script).
 
-**🔑 Anti-collision protocol:**
-- **First 15 min, together:** lock the **API contract** (endpoints + JSON, from the Data Contract below). Freeze it; change only by mutual agreement.
-- Person B builds against a **static mock JSON** so the frontend never waits on the backend.
-- Integrate at TWO checkpoints only: **~1:15** wire FE → `/predict` + `/edit`; **~2:00** wire `/agents`.
-- Cloud agents take sub-tasks *within* each lane (e.g. A's agent seeds Pinecone while A builds DeepGaze).
-- Commit + push small and often; pull before push (see CLAUDE.md).
+**🔑 Anti-collision rules (matter most in Phase 2):**
+- Agree the `/agents` + `/predict` + `/edit` JSON shapes during Phase 1; freeze them.
+- Each vertical owns **separate files/folders** — don't both edit `App.tsx`; compose via components.
+- Commit + push small and often; **pull/rebase before push** (see CLAUDE.md). Two cloud agents are live in this repo.
 
 ---
 
@@ -278,7 +276,8 @@ The demo IS the product for judging (Execution 20 + UX 15 + Presentation 5 + Inn
 ---
 
 ## Decisions Log (running)
-- **Input mode:** Mode A (upload real ad) is the de-risked spine; Mode B (text→research→generate) is an optional pre-cached "wow" front door, not a replacement. *(detail in HACKATHON_CONTEXT Session Research Log)*
+- **Input mode → HYBRID (locked):** ship BOTH entry points converging on the same gaze loop. Mode B = type company → research agent → **generate a rough v1** → then **visibly optimize it** (so generation is the wow AND the v1→optimized delta is the money shot). Keep ≥1 **real-ad** example (Mode A) for the unimpeachable proof, and **pre-cache** the Mode-B generated path so live latency/flakiness can't sink the demo. Not technically hard (two entry points, one loop); the cost is demo risk, handled by caching.
+- **Team workflow → spine-first, then vertical fork** (NOT a frontend/backend tier split — see Work Split above).
 - **LangSmith:** adopt tracing + `attention_score` feedback logging (nearly free; debug + demo chart); dataset eval is stretch. *(detail in HACKATHON_CONTEXT Session Research Log)*
 - **Voice:** Web Speech API wrapper, not full Gemini Live (see above).
 - **Gemini edit:** must resample-to-input-dims + normalized box + re-detect target + integrity gate (see Critical Build Risk above).

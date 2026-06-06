@@ -211,7 +211,7 @@ Question raised: instead of uploading a pre-existing ad, type text → an agent 
 
 **Key risk with text-in:** if the agent generates the "before," we're optimizing our own strawman — a judge can ask "did attention rise because the editor is good, or because v1 was deliberately weak?" Uploading a real ad removes that doubt. The score lift is *objectively real* either way (DeepGaze is source-agnostic), but the real-ad baseline is more persuasive.
 **Note:** "from scratch on the day" = our **code**, not the ad. Uploading a real brand ad as demo *input* is fine (it's data).
-**Open question for Enes:** in Mode B, is optimization still the star (generate rough v1 → visibly improve), or is generation the point and optimize secondary? Changes whether the generator aims for "good" or "good enough to then improve."
+**RESOLVED (hybrid):** ship both entry points → same gaze loop. Mode B generates a **rough v1**, then **visibly optimizes it** — generation is the wow, the v1→optimized delta stays the money shot. Keep ≥1 real-ad example (Mode A) for credibility; pre-cache the Mode-B path for the live demo. *(see PLAN.md Decisions Log)*
 
 ---
 
