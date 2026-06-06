@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { UserButton } from "@clerk/react";
-import { predict, runAgents, USE_MOCK_PREDICT, type PredictResult, type AgentsResult, type Fixation } from "./api";
+import { predict, runAgents, USE_MOCK_PREDICT, USE_MOCK_AGENTS, type PredictResult, type AgentsResult, type Fixation } from "./api";
 import { SAMPLES, type Sample } from "./samples";
 import HeroBranches from "./HeroBranches";
 import BranchWorkspace from "./BranchWorkspace";
+import ActivityLog from "./ActivityLog";
 
 // UserButton must live inside a ClerkProvider; main.tsx only mounts one when a key exists.
 const HAS_CLERK = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -54,9 +55,26 @@ export default function App() {
 
   async function optimize() {
     if (!file) return;
-    setBusy("Agents optimizing…");
-    try { setAgents(await runAgents(file, brand)); }
-    catch (e) { alert(String(e)); }
+    setAgents(null);
+    try {
+      // Walk the real agent stages so the result doesn't pop instantly. In mock mode we
+      // pace it (~6s); in live mode the real /agents call provides the wait on its own.
+      if (USE_MOCK_AGENTS) {
+        const stages = [
+          "Insider · reading the brand brief…",
+          "Scout · searching competitor campaigns…",
+          "Eye · scoring baseline attention…",
+          "Retoucher · generating edits with Nano Banana…",
+          "Eye · re-scoring the variants…",
+        ];
+        const result = await runAgents(file, brand);
+        for (const s of stages) { setBusy(s); await new Promise((r) => setTimeout(r, 1050 + Math.random() * 500)); }
+        setAgents(result);
+      } else {
+        setBusy("Agents optimizing… (Nano Banana edits + re-scoring)");
+        setAgents(await runAgents(file, brand));
+      }
+    } catch (e) { alert(String(e)); }
     finally { setBusy(""); }
   }
 
@@ -90,6 +108,14 @@ export default function App() {
             <HeroBranches />
           </section>
 
+          <div className="uploadrow">
+            <label className="filebtn">
+              ↑ Upload your own ad
+              <input type="file" accept="image/*" onChange={onPick} />
+            </label>
+            <span className="or">or pick a sample below</span>
+          </div>
+
           <div className="gallery-head">
             <h3>Sample campaigns</h3>
             <span className="hint">click one to analyze →</span>
@@ -115,13 +141,6 @@ export default function App() {
             ))}
           </div>
 
-          <div className="uploadrow">
-            <label className="filebtn">
-              ↑ Upload your own
-              <input type="file" accept="image/*" onChange={onPick} />
-            </label>
-            <span className="or">or use a sample above</span>
-          </div>
         </>
       ) : (
         <>
@@ -157,6 +176,7 @@ export default function App() {
             </div>
 
             <aside className="panel">
+              <ActivityLog busy={busy} pred={pred} agents={agents} />
               {score !== undefined && (
                 <div className="score">
                   <div className="num"><Counter value={score * 100} /><span className="pct">%</span></div>
@@ -199,7 +219,6 @@ export default function App() {
                       </span>
                     </div>
                   ))}
-                  <p className="rationale">“{agents.rationale}”</p>
                 </div>
               )}
 
