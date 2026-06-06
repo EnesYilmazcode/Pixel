@@ -1,7 +1,8 @@
-import {ClerkProvider, ClerkLoaded, ClerkLoading, Show, SignUp} from "@clerk/react";
+import { ClerkProvider, ClerkLoaded, ClerkLoading, Show } from "@clerk/react";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import Landing from "./Landing";
 import "./index.css";
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -9,8 +10,8 @@ if (!publishableKey) {
   throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY in .env.local");
 }
 
-// Hard auth gate: the app only mounts for signed-in users. Everyone else
-// gets the sign-up form immediately and cannot reach the tool.
+// Public landing for signed-out visitors; the playground mounts only once
+// signed in. Auth fires from the landing's modal buttons, not on load.
 function Gate() {
   return (
     <>
@@ -24,14 +25,7 @@ function Gate() {
           <App />
         </Show>
         <Show when="signed-out">
-          <div className="gate">
-            <div className="gate-intro">
-              <h1>Pixel</h1>
-              <p>See where attention goes · fix it · prove the lift.</p>
-              <p className="gate-sub">Sign up to start optimizing your campaign creative.</p>
-            </div>
-            <SignUp routing="hash" />
-          </div>
+          <Landing />
         </Show>
       </ClerkLoaded>
     </>

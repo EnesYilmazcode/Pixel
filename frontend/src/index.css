@@ -68,3 +68,38 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   border-top: 1px solid var(--line); font-size: 14px; }
 .row:first-of-type { border-top: none; }
 .rationale { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+
+/* ── Landing (public, signed-out) ───────────────────────────── */
+.landing { max-width: 880px; margin: 0 auto; padding: 24px; }
+.lhead { display: flex; align-items: center; justify-content: space-between; }
+.lhead .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+button.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+button.ghost:hover { color: var(--txt); }
+
+.hero { text-align: center; padding: 72px 0 40px; }
+.hero h1 { margin: 0 auto; max-width: 16ch; font-size: 44px; line-height: 1.08;
+  letter-spacing: -0.03em; }
+.lede { margin: 20px auto 28px; max-width: 56ch; color: var(--muted); font-size: 17px; }
+button.cta { font-size: 15px; padding: 12px 22px; }
+
+.demo .video-frame { position: relative; border: 1px solid var(--line); border-radius: 12px;
+  overflow: hidden; aspect-ratio: 16 / 9; background: var(--panel); }
+.demo video { position: relative; z-index: 1; width: 100%; height: 100%; display: block;
+  object-fit: cover; }
+.video-fallback { position: absolute; inset: 0; display: grid; place-items: center;
+  color: var(--muted); font-size: 14px; }
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 48px 0; }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 20px; }
+.step .n { display: inline-grid; place-items: center; width: 24px; height: 24px;
+  border-radius: 50%; border: 1px solid var(--line); color: var(--muted); font-size: 13px;
+  font-weight: 700; }
+.step h3 { margin: 12px 0 4px; font-size: 16px; }
+.step p { margin: 0; color: var(--muted); font-size: 14px; }
+
+@media (max-width: 640px) {
+  .hero { padding: 48px 0 32px; }
+  .hero h1 { font-size: 32px; }
+  .steps { grid-template-columns: 1fr; }
+}
