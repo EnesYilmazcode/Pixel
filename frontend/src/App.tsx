@@ -65,10 +65,13 @@ export default function App() {
       "Eye · re-scoring the variants",
     ];
     let si = 0; setBusy(stages[0]);
-    const step = USE_MOCK_AGENTS ? 1100 : 8000;
+    const step = USE_MOCK_AGENTS ? 1150 : 8000;
     const iv = setInterval(() => { si = Math.min(si + 1, stages.length - 1); setBusy(stages[si]); }, step);
     try {
-      const result = await runAgents(file, brand);
+      // In mock mode the call is instant, so hold a minimum so the staged loader is visible;
+      // live mode waits on the real call itself.
+      const minWait = USE_MOCK_AGENTS ? new Promise((r) => setTimeout(r, stages.length * 1150)) : Promise.resolve();
+      const [result] = await Promise.all([runAgents(file, brand), minWait]);
       setAgents(enrichTree(result, imgUrl)); // attach the real original + winner images to the tree
     } catch (e) {
       alert(String(e));

@@ -270,6 +270,9 @@ button.ghost:hover:not(:disabled) { color: var(--ink); border-color: transparent
   content: ""; width: 7px; height: 7px; border-radius: 50%;
   background: var(--accent); animation: pulse 1s infinite;
 }
+/* cycling 1→2→3 dot loader after the running-stage label */
+.busy .dots::after { content: "."; animation: dots 1.2s infinite; }
+@keyframes dots { 0% { content: "."; } 33% { content: ".."; } 66%, 100% { content: "..."; } }
 
 .stage { display: grid; grid-template-columns: 1fr 350px; gap: 22px; align-items: start; }
 .canvas {
@@ -434,6 +437,13 @@ button.ghost:hover:not(:disabled) { color: var(--ink); border-color: transparent
 .ws-node.dead .ws-node-tag { color: var(--accent-ink); }
 .ws-node.sel { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
 .ws-node.root { background: var(--bg-tint); }
+.ws-noimg { display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center;
+  text-align: center; padding: 40px 24px; min-height: 240px; color: var(--muted); background: var(--bg-tint); }
+.ws-noimg span { font-weight: 600; }
+.ws-noimg small { font-size: 12px; color: var(--faint); max-width: 32ch; }
+.ws-node-noimg { display: flex; align-items: center; justify-content: center; height: 84px;
+  background: var(--bg-tint); color: var(--faint); font-family: var(--font-mono); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.08em; }
 @media (max-width: 760px) { .ws-body { grid-template-columns: 1fr; } }
 
 /* branch search tree — columns per round, nodes reveal in sequence */

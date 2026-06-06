@@ -27,8 +27,17 @@ export default function BranchWorkspace({ tree, baseline }: { tree: TreeNode[]; 
       <div className="ws-body">
         <div className="ws-preview">
           <div className="frame">
-            {node.image && <img className="base" src={node.image} alt="selected variant" />}
-            {node.heatmap && <img className="heat" src={node.heatmap} alt="attention" />}
+            {node.image ? (
+              <>
+                <img className="base" src={node.image} alt="selected variant" />
+                {node.heatmap && <img className="heat" src={node.heatmap} alt="attention" />}
+              </>
+            ) : (
+              <div className="ws-noimg">
+                <span>Pruned variant</span>
+                <small>scored below the field — dropped, so no preview was kept</small>
+              </div>
+            )}
             <span className={`frame-badge ${isOriginal ? "orig" : kept ? "" : "dead"}`}>
               {isOriginal ? "original" : kept ? "✦ winner" : "pruned"}
             </span>
@@ -79,7 +88,7 @@ export default function BranchWorkspace({ tree, baseline }: { tree: TreeNode[]; 
                       style={{ animationDelay: `${d * 0.35 + i * 0.12}s` }}
                       title={n.directive}
                     >
-                      {n.image && <img src={n.image} alt="" />}
+                      {n.image ? <img src={n.image} alt="" /> : <span className="ws-node-noimg">pruned edit</span>}
                       <span className="ws-node-bar">
                         <span className="ws-node-score">{Math.round(n.score * 100)}%</span>
                         {n.parent !== null && <span className="ws-node-tag">{win ? "kept" : dead ? "pruned" : ""}</span>}
