@@ -85,6 +85,64 @@ def _retrieve_pinecone(brand: str, brief: dict, fam: str | None, k: int) -> list
         return []
 
 
+def _grounding_meta(resp) -> dict:
+    """Pull the live web sources + queries Gemini grounded on (demo proof + brief)."""
+    try:
+        gm = resp.candidates[0].grounding_metadata
+        sources = [{"title": c.web.title, "url": c.web.uri}
+                   for c in (gm.grounding_chunks or [])
+                   if getattr(c, "web", None) and getattr(c.web, "uri", None)]
+        # de-dupe by url, keep order
+        seen, uniq = set(), []
+        for s in sources:
+            if s["url"] not in seen:
+                seen.add(s["url"])
+                uniq.append(s)
+        return {"sources": uniq, "queries": list(gm.web_search_queries or [])}
+    except Exception:
+        return {"sources": [], "queries": []}
+
+
+def _retrieve_web(brand: str, brief: dict, fam: str | None, k: int) -> tuple[list[dict], dict]:
+    """LIVE web grounding via Gemini + Google Search: find REAL recent competitor ad
+    campaigns and the visual-attention tactics they use. Returns (kb-shaped ads, meta).
+    Empty on any failure so Scout falls back to memory/curated KB."""
+    try:
+        from google import genai
+        from google.genai import types
+        gem = genai.Client(api_key=settings.gemini_api_key)
+        cat = f" in the {fam} category" if fam else ""
+        prompt = (
+            f'Search the web for RECENT (last ~2 years) advertising campaigns from direct '
+            f'competitors of "{brand}"{cat}. For each rival ad, analyze its VISUAL attention '
+            "strategy — how the creative pulls the eye to the product, logo, or CTA "
+            "(composition, contrast, focal point, color, negative space, lead-in lines). "
+            f"Return ONLY a JSON array of up to {k} objects with keys: "
+            '"brand", "tactic" (short name), "apply" (one concrete image-edit instruction to '
+            'raise attention on OUR brand target), "evidence" (campaign name / where it ran), '
+            '"text" (2-sentence visual analysis). Output the JSON array only, no other prose.'
+        )
+        resp = gem.models.generate_content(
+            model=settings.gemini_text_model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                tools=[types.Tool(google_search=types.GoogleSearch())],
+                temperature=0.4,
+            ),
+        )
+        txt = resp.text or ""
+        s, e = txt.find("["), txt.rfind("]")
+        raw = json.loads(txt[s:e + 1]) if s != -1 else []
+        ads = [{"brand": str(a["brand"]), "family": fam or "",
+                "tactic": str(a.get("tactic", "")), "apply": str(a.get("apply", "")),
+                "evidence": str(a.get("evidence", "live web")), "text": str(a.get("text", "")),
+                "source": "web"}
+               for a in raw if isinstance(a, dict) and a.get("brand")]
+        return ads[:k], _grounding_meta(resp)
+    except Exception:
+        return [], {"sources": [], "queries": []}
+
+
 def _synthesize(brand: str, brief: dict, ads: list[dict]) -> list[dict]:
     """Turn retrieved rival ads into 3 tactics {tactic, evidence, apply}."""
     if settings.has_gemini:
@@ -128,35 +186,60 @@ def _synthesize_gemini(brand: str, brief: dict, ads: list[dict]) -> list[dict]:
         return []
 
 
-def _write_brief(brand: str, tactics: list[dict], ads: list[dict]) -> None:
+def _write_brief(brand: str, tactics: list[dict], ads: list[dict], meta: dict | None = None) -> None:
     """Debug + demo artifact: what Scout found this run."""
     try:
+        meta = meta or {}
         _RUNS.mkdir(parents=True, exist_ok=True)
         lines = [f"# Scout brief — {brand}", "", "## Tactics"]
         for t in tactics:
             lines.append(f"- **{t['tactic']}** — {t['apply']}  _(via {t['evidence']})_")
         lines += ["", "## Retrieved rivals", *[f"- {a.get('brand')}: {a.get('tactic')}" for a in ads]]
+        if meta.get("queries"):
+            lines += ["", "## Live web queries", *[f"- {q}" for q in meta["queries"]]]
+        if meta.get("sources"):
+            lines += ["", "## Live web sources",
+                      *[f"- [{s.get('title') or s['url']}]({s['url']})" for s in meta["sources"]]]
         (_RUNS / f"scout_{brand.lower().replace(' ', '_')}.md").write_text("\n".join(lines), encoding="utf-8")
     except Exception:
         pass  # artifacts are nice-to-have, never break the run
 
 
 def scout(brand: str, brief: dict | None = None, k: int = 4) -> dict:
-    """Scout agent entry point. Returns {"tactics": [ {tactic, evidence, apply} x3 ]}."""
+    """Scout agent entry point. Returns {"tactics":[{tactic,evidence,apply} x3],
+    "source", "sources":[{title,url}], "queries":[...]}.
+
+    Retrieval cascade (each degrades to the next): LIVE web (Gemini+Google Search)
+    → Pinecone vector memory → curated local KB. Web findings are padded with the
+    KB so synthesis always has enough material."""
     brief = brief or {}
     fam = _FAMILY.get(brand.strip().lower())
 
-    ads, source = [], "local-kb"
-    if settings.has_pinecone and settings.has_gemini:
+    ads, source, meta = [], "local-kb", {"sources": [], "queries": []}
+
+    # 1. Live web — real, current rival campaigns.
+    if settings.web_search and settings.has_gemini:
+        ads, meta = _retrieve_web(brand, brief, fam, settings.web_k)
+        if ads:
+            source = "web"
+
+    # 2. Vector memory (Pinecone) if the web gave nothing.
+    if not ads and settings.has_pinecone and settings.has_gemini:
         ads = _retrieve_pinecone(brand, brief, fam, k)
         if ads:
             source = "pinecone"
-    if not ads:
-        ads = _retrieve_local(brand, brief, fam, k)
+
+    # 3. Curated local KB — always available; also pads thin web results up to k.
+    if len(ads) < k:
+        have = {a.get("brand", "").lower() for a in ads}
+        ads += [a for a in _retrieve_local(brand, brief, fam, k)
+                if a.get("brand", "").lower() not in have]
+        ads = ads[:k]
 
     tactics = _synthesize(brand, brief, ads)
-    _write_brief(brand, tactics, ads)
-    return {"tactics": tactics, "source": source}
+    _write_brief(brand, tactics, ads, meta)
+    return {"tactics": tactics, "source": source,
+            "sources": meta["sources"], "queries": meta["queries"]}
 
 
 if __name__ == "__main__":

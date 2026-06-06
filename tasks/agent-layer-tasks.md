@@ -61,6 +61,16 @@ Still recommended for stage: **pre-warm DeepGaze** before demos, and **precomput
 
 ---
 
+## Coordination note — Scout now does LIVE web search (C → B) ✅ DONE
+Previously Scout retrieved only from a static 12-ad corpus (`pinecone_seed.ADS` → `kb.json` → Pinecone) — the "evidence" was hand-curated, never real. Added a **live web-grounding layer** in `competitive.py` so Scout pulls **real, current** competitor campaigns:
+- New `_retrieve_web(brand, brief, fam, k)` calls Gemini with the **Google Search tool** (`types.Tool(google_search=types.GoogleSearch())`) and parses a JSON array of rival ad analyses. `_grounding_meta()` extracts the real **source URLs + search queries** Gemini used.
+- `scout()` cascade is now **web → Pinecone → curated KB**, with the KB **padding** thin web results so synthesis always has ≥k items. Verified live (Liquid Death → Waterloo/Olipop/Poppi + bevnet/marketingdive sources).
+- **Return shape extended (backward-compatible):** still `{"tactics", "source"}`, plus `"sources":[{title,url}]` and `"queries":[...]`. These flow through `/agents` → `competitive_insights`, so the **frontend can show "grounded on N live sources"** as demo proof. The `runs/scout_*.md` artifact now lists the queries + sources too.
+- **Toggle:** `WEB_SEARCH=0` disables it (config `web_search`); `web_k=4`. Requires `GEMINI_API_KEY` (no new deps — uses the existing `google-genai`).
+- **Latency:** Scout now makes **2 Gemini text calls** (grounded retrieve + synthesize), once per `/agents` run (~+3–8s). Not in the per-edit loop, so it doesn't multiply. `config.py` + `competitive.py` are B's files — flagging the cross-edit; revert/adjust freely.
+
+---
+
 ## Task breakdown (small, sequenced, non-interfering — check off as you go)
 
 ### Phase 1 — Single-variant loop (do first)

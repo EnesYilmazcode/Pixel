@@ -28,6 +28,10 @@ class Settings:
     target_score: float = 0.40
     epsilon: float = 0.02
 
+    # Scout: live web grounding (Gemini + Google Search). Off via WEB_SEARCH=0.
+    web_search: bool = os.getenv("WEB_SEARCH", "1") != "0"
+    web_k: int = 4  # max rival campaigns to pull from the live web per run
+
     @property
     def has_gemini(self) -> bool:
         return bool(self.gemini_api_key)
