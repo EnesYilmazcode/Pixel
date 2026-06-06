@@ -123,6 +123,36 @@ def brand_brief(brand: str) -> dict:
         return dict(_FALLBACK_BRIEF)
 
 
+def name_regions(image: Image.Image, regions: list[list[float]]) -> list[str]:
+    """Label what's actually inside each normalized [x,y,w,h] box (e.g. 'woman's face',
+    'Coca-Cola can') so distractor callouts read like a human, not 'upper-left region'.
+    Returns [] on no key/error — callers keep their own position labels."""
+    client = _genai()
+    if client is None or not regions:
+        return []
+    boxes = "; ".join(f"{i}:[{','.join(f'{v:.2f}' for v in r)}]" for i, r in enumerate(regions))
+    prompt = (
+        "Each box below is [x,y,w,h] as fractions of this image's width/height. "
+        f"Name the main object inside each in 2-4 words. Boxes: {boxes}. "
+        'Respond ONLY JSON {"labels":["..","..."]} in the same order.'
+    )
+    try:
+        resp = client.models.generate_content(model=settings.gemini_text_model, contents=[prompt, image])
+        labels = json.loads(_first_json(resp.text)).get("labels", [])
+        return [str(x) for x in labels][: len(regions)]
+    except Exception:
+        return []
+
+
+def label_distractors(image: Image.Image, distractors: list[dict]) -> None:
+    """Replace each distractor's position label ('upper-left region') with the named
+    object Gemini sees there ('woman's face'). Mutates in place; no-op without a key."""
+    names = name_regions(image, [d["region"] for d in distractors])
+    for d, nm in zip(distractors, names):
+        if nm:
+            d["desc"] = nm
+
+
 def _first_json(text: str) -> str:
     s, e = text.find("{"), text.rfind("}")
     return text[s:e + 1] if s != -1 and e != -1 else "{}"

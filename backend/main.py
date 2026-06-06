@@ -48,8 +48,11 @@ def health() -> dict:
 
 @app.post("/predict")
 async def predict(image: UploadFile = File(...), target: str | None = Form(None)) -> dict:
+    img = await _image(image)
     box = json.loads(target) if target else None
-    return dg.predict(await _image(image), box)
+    result = dg.predict(img, box)
+    gemini.label_distractors(img, result["distractors"])  # name what each thief actually is
+    return result
 
 
 @app.post("/edit")

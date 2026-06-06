@@ -53,6 +53,7 @@ def run(image: Image.Image, brand: str = "the brand") -> dict:
     don't improve, grow the best. Never regresses (the original is the floor)."""
     target = gemini.detect_target(image)
     before = dg.predict(image, target)
+    gemini.label_distractors(image, before["distractors"])  # name thieves for directives + UI
     baseline = before["attention_score"]
     brief = insider(brand)
     insights = scout(brand, brief)
