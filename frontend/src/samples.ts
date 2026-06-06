@@ -87,14 +87,4 @@ export const SAMPLES: Sample[] = [
     target_desc: "The Pepsi globe on the can face, center against blue.",
     tint: "#004B93",
   },
-  {
-    id: "liquid-death",
-    brand: "Liquid Death",
-    campaign: "Tallboy can",
-    img: "/samples/liquid-death.jpg",
-    target_box: [0.3, 0.22, 0.36, 0.64],
-    target_desc: "The can + gothic mark, upper-middle of the can body.",
-    tint: "#0B0B0B",
-    note: "stand-in can (no licensed Liquid Death image on free hosts)",
-  },
 ];
