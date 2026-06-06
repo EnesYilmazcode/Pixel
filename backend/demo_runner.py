@@ -84,16 +84,16 @@ def _compare(before: Image.Image, after: Image.Image, res: dict, brand: str) -> 
     base_pct = round(res["baseline_score"] * 100)
     fin_pct = round(res["final_score"] * 100)
     dpts = fin_pct - base_pct
-    bq, fq = round(res["baseline_quality"] * 100), round(res["final_quality"] * 100)
+    jq = res.get("judge_score")
 
     d.text((pad, 22), f"{brand.title()} — attention on target", font=f_mid, fill=(235, 235, 240))
     d.text((pad, 66), f"{base_pct}%  →  {fin_pct}%", font=f_big, fill=(255, 255, 255))
     tw = d.textlength(f"{base_pct}%  →  {fin_pct}%", font=f_big)
-    d.text((pad + tw + 26, 78), f"+{dpts} pts", font=f_mid, fill=(80, 220, 120))
-    d.text((W - 430, 30), f"Critic brand-fit: {bq}% → {fq}%", font=f_sm, fill=(200, 200, 210))
-    rej = sum(1 for n in res["tree"] if n["status"] == "rejected")
-    d.text((W - 430, 64), f"attention-hacks vetoed: {rej}", font=f_sm, fill=(200, 200, 210))
-    d.text((W - 430, 98), "DeepGaze IIE objective + Gemini Critic", font=f_sm, fill=(140, 140, 150))
+    sign = "+" if dpts >= 0 else ""
+    d.text((pad + tw + 26, 78), f"{sign}{dpts} pts", font=f_mid, fill=(80, 220, 120))
+    jtxt = f"Judge brand-fit: {round(jq * 100)}%" if jq is not None else "Judge: kept original"
+    d.text((W - 440, 40), jtxt, font=f_sm, fill=(200, 200, 210))
+    d.text((W - 440, 84), "DeepGaze IIE objective + Gemini Judge", font=f_sm, fill=(140, 140, 150))
 
     lf = _font(26)
     d.text((pad + 8, band + pad + 8), "BEFORE", font=lf, fill=(255, 255, 255))
@@ -107,15 +107,14 @@ def run_brand(brand: str) -> None:
     res = agents.run(img, brand=brand, target=_TARGETS.get(brand), depth=_DEPTH)
 
     real = "DeepGaze IIE" if dg._model is not None else "edge+center FALLBACK"
+    jq = res.get("judge_score")
     print(f"  saliency engine : {real}")
     print(f"  attention       : {res['baseline_score']:.3f} -> {res['final_score']:.3f}"
           f"  (+{round((res['final_score'] - res['baseline_score']) * 100)} pts)")
-    print(f"  Critic brand-fit: {res['baseline_quality']:.3f} -> {res['final_quality']:.3f}"
-          f"  (floor {res['quality_floor']:.2f})")
-    rej = sum(1 for n in res["tree"] if n["status"] == "rejected")
-    alive = sum(1 for n in res["tree"] if n["status"] in ("alive", "best"))
-    print(f"  variants        : {alive} kept, {rej} vetoed by Critic")
-    print(f"  critic verdict  : {res['critic_reason'][:90]}")
+    print(f"  Judge brand-fit : {jq if jq is not None else 'kept original'}")
+    judge_step = next((s for s in res.get("iterations", []) if s["agent"] == "Judge"), None)
+    if judge_step:
+        print(f"  Judge verdict   : {judge_step['summary']}")
 
     out = _OUT / brand
     out.mkdir(parents=True, exist_ok=True)
