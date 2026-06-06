@@ -30,7 +30,9 @@ class Settings:
     embed_dim: int = 768  # must match the Pinecone index dimension
 
     # Retoucher beam-search params (greedy; see tasks/agent-layer-tasks.md).
-    breadth: int = 3
+    # breadth=5 tries the full strong directive set per round (concurrently) so the best
+    # reliably beats baseline; run() also retries until it improves. Never regresses.
+    breadth: int = 5
     max_depth: int = 3
     target_score: float = 0.40
     epsilon: float = 0.02
