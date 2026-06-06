@@ -71,7 +71,7 @@ export default function App() {
       // In mock mode the call is instant, so hold a minimum so the staged loader is visible;
       // live mode waits on the real call itself.
       const minWait = USE_MOCK_AGENTS ? new Promise((r) => setTimeout(r, stages.length * 1150)) : Promise.resolve();
-      const [result] = await Promise.all([runAgents(file, brand), minWait]);
+      const [result] = await Promise.all([runAgents(file, brand, active?.target_box), minWait]);
       setAgents(enrichTree(result, imgUrl)); // attach the real original + winner images to the tree
     } catch (e) {
       alert(String(e));

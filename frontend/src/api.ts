@@ -4,9 +4,11 @@
 import mock from "./mock.json";
 
 export const USE_MOCK_PREDICT = false; // real DeepGaze via Vite proxy → :8000
-export const USE_MOCK_AGENTS = true;   // TODO: flip once /agents stops 500ing
+export const USE_MOCK_AGENTS = false;  // live /agents (the 500 bug is fixed; real Judge-gated loop)
 export const USE_MOCK = USE_MOCK_PREDICT && USE_MOCK_AGENTS;
-export const MODE_LABEL = USE_MOCK_PREDICT ? "Mock data" : "Live gaze · mock optimize";
+export const MODE_LABEL = USE_MOCK_PREDICT
+  ? "Mock data"
+  : USE_MOCK_AGENTS ? "Live gaze · mock optimize" : "Live";
 
 export type Box = [number, number, number, number]; // normalized x,y,w,h
 export type Distractor = { region: Box; share: number; desc: string };
@@ -64,11 +66,12 @@ export async function predict(file: File, target?: Box): Promise<PredictResult> 
   return r.json();
 }
 
-export async function runAgents(file: File, brand: string): Promise<AgentsResult> {
+export async function runAgents(file: File, brand: string, target?: Box): Promise<AgentsResult> {
   if (USE_MOCK_AGENTS) return mock.agents as AgentsResult;
   const fd = new FormData();
   fd.append("image", file);
   fd.append("brand", brand);
+  if (target) fd.append("target", JSON.stringify(target)); // curated brand region → meaningful baseline
   const r = await fetch("/agents", { method: "POST", body: fd });
   if (!r.ok) throw new Error(`/agents ${r.status}`);
   return r.json();
