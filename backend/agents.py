@@ -49,19 +49,24 @@ def _directive_pool(before: dict, insights: dict, brand: str) -> list[str]:
     Judge-gated fitness (_make_scorer) penalizes any variant that crosses into garish, so
     the search can push moderately without an ugly edit winning on raw attention."""
     target = f"the {brand} logo and product"
+    # Content-level levers that actually move DeepGaze (gentle re-lighting barely does). The first
+    # three run on the live (depth=1) path, so they're the highest-value, most distinct edits:
+    # de-clutter, reframe head-on, add brand text. Judge-gated fitness still vetoes un-ad-like edits.
     pool = [
-        f"make {target} the hero of the shot: clearly boost its contrast, color saturation and "
-        f"sharpness and add directional lighting so the eye lands on it first — keep the scene "
-        f"photographic and on-brand",
-        f"make {target} pop AND noticeably darken and desaturate the background and surrounding "
-        f"objects so {target} is the brightest focal point — keep every element recognizable, no "
-        f"black voids, still a real-looking ad",
-        f"add a focal vignette and depth-of-field falloff so the surroundings blur softly and "
-        f"{target} stays crisp and front-of-stage, like a professional product shot",
+        f"remove or clean away any objects, hands, props or background obstructions that crowd or "
+        f"block {target} so the product is fully visible, unobstructed, and the clear hero of the shot",
+        f"reframe {target} to a clean, head-on, front-facing hero angle — square it to the camera so "
+        f"it faces the viewer directly and reads instantly — keep it in roughly the same spot",
+        f"add a bold, legible, on-brand headline and call-to-action and strengthen the logo/wordmark "
+        f"right at {target} as a strong, high-contrast focal point",
+        f"clearly enlarge, brighten and sharpen {target} so it becomes the single biggest, boldest "
+        f"focal element while gently dimming and de-cluttering the surroundings — a polished, real ad",
+        f"recolor the background to a clean, on-brand solid or subtle gradient so {target} stands out "
+        f"as the hero, keeping the shot photographic and realistic",
     ]
-    # Moderate, targeted suppression of each competing element (clearly tone down, not blackout).
-    pool += [f"clearly tone down the {d['desc']} — reduce its brightness, color and detail so it "
-             f"stops pulling focus from {target}, but keep it present and recognizable"
+    # Targeted suppression of each named competing element (clearly tone down, not blackout).
+    pool += [f"clearly tone down or remove the {d['desc']} — it is stealing attention from "
+             f"{target}; reduce its brightness, color and prominence so the brand wins the eye"
              for d in before["distractors"]]
     pool += [t["apply"] for t in insights.get("tactics", [])]
     seen, uniq = set(), []
