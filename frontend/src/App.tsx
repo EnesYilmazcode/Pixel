@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
+import { UserButton } from "@clerk/react";
 import { predict, runAgents, USE_MOCK, type PredictResult, type AgentsResult } from "./api";
 
 export default function App() {
@@ -52,13 +52,7 @@ export default function App() {
         <span className="tag">see where attention goes · fix it · prove the lift</span>
         {USE_MOCK && <span className="mock">MOCK DATA</span>}
         <span className="auth">
-          <Show when="signed-out">
-            <SignInButton />
-            <SignUpButton />
-          </Show>
-          <Show when="signed-in">
-            <UserButton />
-          </Show>
+          <UserButton />
         </span>
       </header>
 
