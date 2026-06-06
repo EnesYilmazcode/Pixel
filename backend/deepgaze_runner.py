@@ -16,7 +16,9 @@ from scipy.ndimage import gaussian_filter, sobel
 Box = list[float]  # normalized [x, y, w, h]
 _CENTER_BOX: Box = [0.35, 0.35, 0.30, 0.30]
 
-_model = None  # lazy DeepGaze IIE handle; None until first (successful) load
+_model = None    # lazy DeepGaze IIE handle; None until first (successful) load
+_device = None   # torch device once the model loads
+_MODEL_MAX = 1024  # downscale long side before the model (CPU speed; scoring is normalized)
 
 
 # --- dimension-fix helpers (see PLAN.md → Critical Build Risk) -------------------
@@ -63,16 +65,39 @@ def _fallback_density(arr: np.ndarray) -> np.ndarray:
     return d / (d.sum() + 1e-9)
 
 
+def _gaussian_centerbias(h: int, w: int) -> np.ndarray:
+    """Log-density center prior — DeepGaze requires a centerbias input. A Gaussian
+    prior avoids depending on a downloadable MIT1003 file (and works fine)."""
+    from scipy.special import logsumexp
+    yy, xx = np.mgrid[0:h, 0:w]
+    g = -(((xx - w / 2) / (w * 0.5)) ** 2 + ((yy - h / 2) / (h * 0.5)) ** 2)
+    return g - logsumexp(g)
+
+
 def _density(arr: np.ndarray) -> np.ndarray:
-    """DeepGaze IIE density if available, else the fallback."""
-    global _model
+    """DeepGaze IIE density if torch + weights are available, else the fallback."""
+    global _model, _device
     try:
-        import torch  # noqa: F401
-        import deepgaze_pytorch  # noqa: F401
-        # TODO(activate real model): load DeepGaze IIE + MIT1003 centerbias once,
-        # run model(image_tensor, centerbias_tensor), np.exp the log-density.
-        # Kept behind the fallback until torch + weights are installed.
-        raise ImportError("DeepGaze wiring pending; using fallback")
+        import torch
+        import deepgaze_pytorch
+
+        if _model is None:
+            _device = "cuda" if torch.cuda.is_available() else "cpu"
+            _model = deepgaze_pytorch.DeepGazeIIE(pretrained=True).to(_device).eval()
+
+        h, w = arr.shape[:2]
+        scale = _MODEL_MAX / max(h, w) if max(h, w) > _MODEL_MAX else 1.0
+        small = (np.asarray(Image.fromarray(arr).resize(
+            (max(1, int(w * scale)), max(1, int(h * scale))), Image.LANCZOS))
+            if scale < 1.0 else arr)
+
+        sh, sw = small.shape[:2]
+        img_t = torch.tensor(small.transpose(2, 0, 1)[None]).float().to(_device)
+        cb_t = torch.tensor(_gaussian_centerbias(sh, sw)[None]).float().to(_device)
+        with torch.no_grad():
+            log_density = _model(img_t, cb_t)
+        d = np.exp(log_density[0, 0].cpu().numpy())
+        return d / (d.sum() + 1e-9)
     except Exception:
         return _fallback_density(arr)
 
