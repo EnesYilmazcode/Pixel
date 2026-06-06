@@ -95,7 +95,96 @@ These are the sponsor tools that count toward **Sponsor Technology Integration (
 
 > Effective build window: **~10:30 AM → 3:00 PM (≈4.5 hrs)** before demos start.
 
+## Project Direction (CHOSEN)
+
+**Working name:** Pixel (gaze-driven ad/campaign optimizer)
+
+**One-liner:** Upload existing campaign creative → AI predicts where human eyes will look → agents iteratively edit the image to direct attention where the brand wants it → prove it with an objective before/after attention score.
+
+### Core loop
+1. **Ingest** — user uploads a campaign image (+ optional goal: "drive attention to logo / CTA").
+2. **Analyze** — DeepGaze predicts visual attention (heatmap + scanpath).
+3. **Visualize** — overlay heatmap + numbered gaze-path nodes on the image.
+4. **Optimize** — agents propose edits and call Gemini image editing ("Nano Banana") to move/resize/recolor elements.
+5. **Re-score** — re-run DeepGaze, show the attention metric improved.
+6. **Branch** — spin up multiple agent variants, compare, pick winner. *(stretch)*
+
+### Target track
+Primary: **Best Multi-Agent Interface** (agents optimizing branches in a unified node canvas — dead-on for "interface for agents").
+Backup framing available for **Best AI-Native Workflow** and **Best MultiModal Experience**.
+
+### Why it scores well
+- **Measurable** before/after attention number → Problem Clarity (15) + Execution (20) + Presentation (5).
+- **Novel** saliency-guided iterative editing loop → Innovation (10).
+- **Sponsor-dense** architecture → Sponsor Integration (15).
+
+---
+
+## DeepGaze Research & Decision
+
+The official models live at **github.com/matthias-k/DeepGaze** (PyTorch, pretrained weights for DeepGaze I, II, IIE, III, MSDB).
+
+| Concern | Finding |
+|---|---|
+| **Heatmap mode** | **DeepGaze IIE** — spatial saliency / fixation-density map. SOTA, *calibrated*, robust, single forward pass. Outputs a log-density map of where people look overall (no ordering). |
+| **Node / scanpath mode** | **DeepGaze III** — predicts the *sequence* of fixations conditioned on gaze history. Reproduces real saccade amplitude/direction stats. Best for narrative/flow. |
+| **III's weakness** | Less predictive on scenes with multiple small salient objects / long saccades — i.e. busy ad creative. So don't use it as the sole optimization signal. |
+| **Centerbias** | **Both models require a `centerbias` log-density input.** Use the provided MIT1003 centerbias file, or a uniform centerbias as fallback. |
+| **Deps** | PyTorch, NumPy, SciPy. (MSDB also needs CLIP + DINOv2 — not needed for us.) |
+| **Inference (IIE)** | `model = deepgaze_pytorch.DeepGazeIIE(pretrained=True).to(DEVICE)`<br>`log_density = model(image_tensor, centerbias_tensor)` |
+
+**Decision:** Use **BOTH**.
+- **DeepGaze IIE (heatmap) = optimization objective** (the score agents optimize against: attention-on-target %, attention spread/entropy).
+- **DeepGaze III (scanpath) = hero visualization** (numbered gaze-path nodes + arrows overlaid on image).
+
+**Sources:**
+- [DeepGaze III — JOV (Kümmerer et al.)](https://jov.arvojournals.org/article.aspx?articleid=2778776)
+- [DeepGaze III — PMC full text](https://pmc.ncbi.nlm.nih.gov/articles/PMC9055565/)
+- [DeepGaze IIE — Calibrated SOTA saliency](https://www.researchgate.net/publication/358922466_DeepGaze_IIE_Calibrated_prediction_in_and_out-of-domain_for_state-of-the-art_saliency_modeling)
+- [Official DeepGaze repo (matthias-k/DeepGaze)](https://github.com/matthias-k/DeepGaze)
+
+---
+
+## Proposed Sponsor Architecture
+
+| Sponsor | Where it lives in Pixel |
+|---|---|
+| **Google DeepMind / Gemini** | Image editing (Nano Banana) + reasoning about *what* to move and why |
+| **LangChain** | Orchestrates the analyze → propose → edit → re-score → branch agent loop |
+| **Pinecone** | Memory: store winning ad patterns / brand guidelines; RAG to ground edit suggestions |
+| **Clerk** | Auth + brand/team workspaces |
+| **Sendblue** | (stretch) send variants to a stakeholder for approval over iMessage |
+| **Cursor** | Build-time coding agent (not a runtime dependency) |
+
+---
+
+## Build Plan & Task Split (2 people + cloud agents)
+
+> **Working agreement:** private repo, **commit + push frequently** so both cloud agents share fresh context. **No API keys in git** — wire secrets via `.env` / env vars **last**. Planning/docs first.
+
+**Milestone 0 — Skeleton (do first, together):** repo scaffold, `.gitignore` (include `.env`), README, choose stack (likely Python backend for DeepGaze + web frontend for canvas).
+
+**Track A — Vision/Scoring (the "truth" engine):**
+1. Get DeepGaze IIE running on a sample image → heatmap.
+2. Get DeepGaze III → scanpath nodes.
+3. Define the **attention metric** (attention-on-target %, spread/entropy) → the before/after number.
+
+**Track B — Agent loop + editing:**
+1. Gemini image-edit call wrapper.
+2. LangChain orchestration: propose edit → apply → re-score → keep if improved.
+3. Branching/variants (stretch).
+
+**Track C — Interface (demo-maker):**
+1. Upload + canvas view.
+2. Heatmap overlay + numbered gaze-path nodes.
+3. Before/after score display (the money shot).
+
+**De-risk first:** get **one** image → heatmap → one edit → re-score showing the number go up. That single loop is already a winning demo; everything else is stretch.
+
+---
+
 ## Additional Context (raw dump — to be organized later)
 
 <!-- Paste more context below this line. -->
+
 
