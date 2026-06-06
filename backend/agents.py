@@ -27,15 +27,18 @@ def scout(brand: str, brief: dict) -> dict:
     return competitive.scout(brand, brief)
 
 
-def _directive_pool(before: dict, insights: dict) -> list[str]:
-    """Diverse edit hypotheses the branch search draws from — each a different avenue."""
-    pool = [f"reduce the visual weight of the {d['desc']} so it stops drawing the eye"
+def _directive_pool(before: dict, insights: dict, brand: str) -> list[str]:
+    """Diverse, AGGRESSIVE edit hypotheses — gentle nudges don't move DeepGaze; suppressing
+    competitors does (verified: +10 pts compounding vs +1 for soft edits)."""
+    target = f"the {brand} logo and product"
+    pool = [f"strongly darken, blur and desaturate the {d['desc']} so it stops competing for attention"
             for d in before["distractors"]]
-    pool += [t["apply"] for t in insights.get("tactics", [])]
     pool += [
-        "increase the contrast and saturation of the main product so it is the clear focal point",
-        "dim and slightly blur the background so the product separates from it",
+        f"mute everything except {target}: darken and desaturate the background and surrounding "
+        f"objects so {target} is the single brightest focal point",
+        f"boost the contrast, saturation and sharpness of {target} while dimming everything around it",
     ]
+    pool += [t["apply"] for t in insights.get("tactics", [])]
     seen, uniq = set(), []
     for d in pool:
         if d and d not in seen:
@@ -50,15 +53,19 @@ def _serialize_tree(tree: list[dict]) -> list[dict]:
              "directive": str(n["directive"])[:80]} for n in tree]
 
 
-def run(image: Image.Image, brand: str = "the brand", depth: int = 1) -> dict:
-    """Optimize an ad. LIVE path uses depth=1 (flat best-of-N with the edits run
-    CONCURRENTLY → ~15-25s, per C's latency note). depth>1 runs the full branching
-    tree-search (slower; use it to PRECOMPUTE the showcase, not on the live path).
+def run(image: Image.Image, brand: str = "the brand", target: list | None = None,
+        depth: int = 1) -> dict:
+    """Optimize an ad. Pass the brand's `target` box (normalized [x,y,w,h]) when known —
+    a curated box gives a meaningful baseline; auto-detection is a noisy fallback.
+    LIVE path uses depth=1; depth>1 runs the full tree-search (precompute the showcase).
     Never regresses — the original is the floor."""
-    # Stage 1: independent intake calls run concurrently (target detect + brand brief).
+    # Stage 1: brand brief (+ target detection only if no curated box was given).
     with cf.ThreadPoolExecutor(max_workers=2) as ex:
-        f_target, f_brief = ex.submit(gemini.detect_target, image), ex.submit(insider, brand)
-        target, brief = f_target.result(), f_brief.result()
+        f_brief = ex.submit(insider, brand)
+        f_target = ex.submit(gemini.detect_target, image) if target is None else None
+        brief = f_brief.result()
+        if f_target is not None:
+            target = f_target.result()
 
     before = dg.predict(image, target)
     baseline = before["attention_score"]
@@ -70,7 +77,7 @@ def run(image: Image.Image, brand: str = "the brand", depth: int = 1) -> dict:
         f_names.result()
         insights = f_insights.result()
 
-    pool = _directive_pool(before, insights)
+    pool = _directive_pool(before, insights, brand)
 
     def propose(_img, node, n):
         start = (node["depth"] * n) % len(pool)  # rotate so each round tries fresh avenues

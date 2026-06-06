@@ -73,8 +73,10 @@ async def edit(image: UploadFile = File(...), directive: str = Form(...)) -> dic
 
 
 @app.post("/agents")
-async def run_agents(image: UploadFile = File(...), brand: str = Form("the brand")) -> dict:
-    return agents.run(await _image(image), brand)
+async def run_agents(image: UploadFile = File(...), brand: str = Form("the brand"),
+                     target: str | None = Form(None)) -> dict:
+    box = json.loads(target) if target else None
+    return agents.run(await _image(image), brand, box)
 
 
 # --- Campaigns: save / list / resume / optimize ---------------------------------

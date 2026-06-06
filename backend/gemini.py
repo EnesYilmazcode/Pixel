@@ -31,11 +31,12 @@ def _genai():
     return _client
 
 
-# Google's documented localized-edit template (keeps composition/dims stable).
+# Focus-oriented edit template: we WANT to restyle the background to redirect attention,
+# but the brand element must stay put + dimensions fixed (so before/after scoring is fair).
 _EDIT_TMPL = (
-    "Using the provided image, {directive}. Keep everything else exactly the same — "
-    "preserve composition, framing, lighting, and the position and size of the logo and "
-    "product. Do not change the aspect ratio or crop the image."
+    "Edit this ad so the brand's product/logo becomes the clear focal point: {directive}. "
+    "Keep the product and logo in their original position and size; do NOT crop or change the "
+    "aspect ratio. You may freely restyle the background and surrounding elements to achieve this."
 )
 
 
