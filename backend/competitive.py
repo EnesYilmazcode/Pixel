@@ -33,6 +33,13 @@ _FAMILY = {
 }
 
 
+def _text(v) -> str:
+    """Flatten a str | list | None field to a plain string (Gemini briefs vary)."""
+    if isinstance(v, list):
+        return " ".join(str(x) for x in v)
+    return str(v) if v else ""
+
+
 def _load_kb() -> list[dict]:
     """Local fallback knowledge base (written by pinecone_seed.py). Empty if unseeded."""
     if _KB.exists():
@@ -52,7 +59,8 @@ def _retrieve_local(brand: str, brief: dict, fam: str | None, k: int) -> list[di
     """Family-first retrieval from the local KB, padded to k with the next-best rivals
     (excluding the brand itself) so Scout always has enough material for 3 tactics."""
     kb = [a for a in _load_kb() if a.get("brand", "").lower() != brand.lower()]
-    terms = (brief.get("tone", "") + " " + " ".join(brief.get("dos", []))).lower().split()
+    # tone/dos may come back from Gemini as a string OR a list — flatten either to text.
+    terms = (_text(brief.get("tone")) + " " + _text(brief.get("dos"))).lower().split()
     rank = lambda a: -sum(w in a.get("text", "").lower() for w in terms)
     same = sorted([a for a in kb if a.get("family") == fam], key=rank)
     rest = sorted([a for a in kb if a.get("family") != fam], key=rank)
