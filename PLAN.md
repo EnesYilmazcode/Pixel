@@ -222,3 +222,64 @@ pixel/
 **First-hour priorities:** (1) `deepgaze_runner.py` prints a real heatmap + score on a sample; (2) Vite + React Flow with a static scanpath. Wire Gemini + agents only once the before/after loop is proven.
 
 **Sources:** [DeepGaze repo](https://github.com/matthias-k/DeepGaze) · [Gemini 2.5 Flash Image](https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-image) · [Gemini image generation guide](https://ai.google.dev/gemini-api/docs/image-generation)
+
+---
+
+## ⚠️ CRITICAL BUILD RISK — read before coding the optimize loop
+
+**Gemini image editing does NOT preserve input dimensions, and has no mask/inpainting.** This can silently invalidate the entire before/after comparison (our money shot). Confirmed via official docs + Google's own acknowledgment (June 2026).
+
+**What breaks:**
+1. **Output resolution is not your input's.** Output is capped to a ~1,048,576-px budget (1024×1024-equiv) and snaps to ~10 aspect buckets. A backend update made it frequently default to **1:1 / 1024×1024 even for non-square inputs** (real case: 2048×1024 in → 1472×704 out). If you score a **fixed pixel bounding box** on raw before/after images, the box doesn't line up → comparison is invalid.
+2. **No binary-mask inpainting in the Gemini API** — editing is *semantic* (prompt-described regions only). Pixel-mask inpainting is Imagen-only (and Imagen is being shut down 2026-06-24). So expect possible **identity/layout drift**: the logo/CTA can move or change, so the original target box may no longer contain the target after the edit.
+
+**Required handling (build this into `deepgaze_runner.py` + `gemini.py` from the start):**
+1. **Record input `(W,H)`; resample every edited output back to exactly `(W,H)`** (`PIL .resize((W,H), LANCZOS)`) before scoring. If aspect ratio changed, **letterbox/pad to input AR then resize** (don't stretch — distortion perturbs saliency). Log raw output dims to detect AR changes.
+2. **Never hard-code a pixel box — use normalized coords** `[x/W, y/H, w/W, h/H]` so the target survives resizing. Score = fraction of total saliency mass inside the box (resolution-invariant).
+3. **Re-detect the target after each edit** (Gemini/vision call returning a bbox, or template match) rather than trusting the original box — guards against drift. Report BOTH the original-box score and the re-detected-box score; agreement = trustworthy, divergence = flag.
+4. **Integrity gate:** reject/redo an edit if output AR differs from input beyond tolerance, or if the target detector can't relocate the logo/CTA (means the edit garbled it). Stops a degenerate edit faking a "win."
+5. **Prompt for localized edits** (Google's official template): *"Using the provided image, change only the [element] to [X]. Keep everything else exactly the same — preserve composition, framing, lighting, and the position/size of the logo and CTA. Do not change the aspect ratio or crop."* One focused change per call.
+6. **Pin the model id** `gemini-2.5-flash-image` (GA; EOL 2026-10-02). Verify output dims empirically with ONE test call before trusting any assumption.
+
+**Sources:** [aspect-ratio regression thread (Google ack)](https://discuss.ai.google.dev/t/gemini-2-5-flash-nano-banana-auto-aspect-ratio-issue-output-image-has-different-aspect-ratio/108225) · [official prompt guide (localized-edit template)](https://developers.googleblog.com/en/how-to-prompt-gemini-2-5-flash-image-generation-for-the-best-results/) · [GA + aspect ratios](https://developers.googleblog.com/en/gemini-2-5-flash-image-now-ready-for-production-with-new-aspect-ratios/) · [mask inpainting is Imagen-only](https://firebase.google.com/docs/ai-logic/edit-images-imagen-overview)
+
+---
+
+## Voice / Multimodal Input — DECISION
+
+The event theme is voice-first / "beyond the command line," so a voice interaction is worth points. But full **Gemini Live API** (WebSocket duplex audio) is a **~2-hour rabbit hole** (PCM resampling, AudioWorklet, mic perms need HTTPS/localhost, echo/barge-in, plus wiring it to drive the agent loop) — too risky with the core loop unproven.
+
+**Decision: use the Web Speech API wrapper, NOT full Gemini Live.**
+- Browser `SpeechRecognition` (STT) → feed the transcript into the **existing** agent pipeline → `speechSynthesis` (TTS) reads the answer back. ~45 min, zero new infra, **cannot break the core loop** because it just wraps it. Demo on Chrome/Edge (STT support). Chunk TTS >~250 chars.
+- Pitch to judges: *"You talk to Pixel; it sees the ad, reasons over it, and talks back."* Name-drop **Gemini Live native audio** (`gemini-live-2.5-flash-native-audio`, 30 HD voices) as the production roadmap.
+- **Timebox 45 min; hard stop ~2:15.** If not solid, demo silent with the spoken script as on-screen text. Only attempt full Gemini Live if the core loop finishes with real time to spare — and keep Web Speech as the fallback.
+- If we want a stronger Gemini story without audio risk: lean on **Gemini multimodal text** ("the agent literally sees the ad" — image+text reasoning), which we already use.
+
+**Sources:** [Gemini Live API overview](https://ai.google.dev/gemini-api/docs/live-api) · [live-api-web-console (React starter)](https://github.com/google-gemini/live-api-web-console) · [Web Speech API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API) · [STT support (caniuse)](https://caniuse.com/speech-recognition)
+
+---
+
+## Demo & Visuals (what looks cool + earns UX/Presentation points)
+
+The demo IS the product for judging (Execution 20 + UX 15 + Presentation 5 + Innovation 10). Build the UI around these beats:
+
+**Hero visuals (in priority order):**
+1. **Before/after heatmap wipe** — a draggable slider that wipes between the original and optimized heatmap overlay on the same ad. Instantly legible, very screenshot-able.
+2. **Rising attention-score counter** — big animated number, `12% → 41%`, with the delta highlighted. The single most persuasive object on screen.
+3. **Live agent pipeline (React Flow)** — nodes Brand → Competitor → Gaze → Editor light up in sequence as the leader runs, score updating on the Gaze node each iteration. This visually *proves* the "multi-agent" claim (Best Multi-Agent Interface track).
+4. **Attention-per-iteration line chart** — the rising curve over iterations (free from LangSmith feedback, or plot locally). Turns one before/after into an objective trend → strong judge artifact.
+5. **Distractor callout** — red box on the attention thief ("model's face — 38% of attention") with the fix annotated. Makes the problem visceral.
+6. **Scanpath nodes** — numbered fixation dots 1→2→3 animating across the ad (DeepGaze III). The "eye-tracking" wow; stretch.
+
+**Demo narrative (90 sec):** upload real Coca-Cola ad → heatmap shows attention wasted on the face, only 12% on the can → hit Optimize → agent pipeline lights up ("it checked what Pepsi does well") → optimized image + re-score: **can attention 12% → 41%** → (stretch) "Approve?" via voice/Sendblue.
+
+**UX must-haves for points:** clear loading states on each agent node (not a frozen spinner), the user can pick/adjust the target region, edits are explained in plain language ("boosted CTA contrast, dimmed upper-right"), and nothing blocks on a live model call without a cached fallback.
+
+---
+
+## Decisions Log (running)
+- **Input mode:** Mode A (upload real ad) is the de-risked spine; Mode B (text→research→generate) is an optional pre-cached "wow" front door, not a replacement. *(detail in HACKATHON_CONTEXT Session Research Log)*
+- **LangSmith:** adopt tracing + `attention_score` feedback logging (nearly free; debug + demo chart); dataset eval is stretch. *(detail in HACKATHON_CONTEXT Session Research Log)*
+- **Voice:** Web Speech API wrapper, not full Gemini Live (see above).
+- **Gemini edit:** must resample-to-input-dims + normalized box + re-detect target + integrity gate (see Critical Build Risk above).
+- **Sponsors committed:** Gemini, LangChain (+LangSmith), Pinecone, Clerk. Stretch: Web Speech voice (Gemini Live as roadmap), Sendblue.
