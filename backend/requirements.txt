@@ -17,6 +17,9 @@ einops
 timm
 git+https://github.com/openai/CLIP.git
 
-# Memory / observability — Phase 2 (uncomment when wiring Scout/Pinecone + LangSmith)
+# Agent orchestration — LangChain (LCEL) drives the Director. No API key / network
+# needed. (Pulls langsmith transitively; tracing stays off unless a key is set.)
+langchain-core
+
+# Memory — Pinecone (Scout uses it when PINECONE_API_KEY is set; else local kb.json)
 # pinecone
-# langsmith

@@ -1,8 +1,12 @@
-"""The Director loop — single-variant MVP (baseline → directive → edit → re-score).
+"""The Director — orchestrates the agent fleet (Insider → Scout → Eye → Retoucher →
+Judge → Eye) and returns an AgentsResult-shaped dict (see the frozen contract).
 
-Insider/Scout are stubbed here and become real in Phase 2 (Gemini brief + Pinecone
-RAG). Branching/Judge (branch.py) layers on top once this 1-variant loop is green.
-Returns an AgentsResult-shaped dict (see schemas.py / the frozen contract).
+The pipeline is composed as a LangChain LCEL chain (so LangChain orchestrates the
+steps; no API key needed), with a plain sequential fallback so the app runs even
+without LangChain installed. LangSmith tracing is optional and self-enables only when
+a LangSmith key is set. The Retoucher's branching search (branch.py) optimizes a
+Judge-gated fitness: DeepGaze attention, but variants the LLM-judge finds off-brand or
+garish are penalized so they can't win on raw attention alone (anti reward-hacking).
 """
 from __future__ import annotations
 
@@ -65,49 +69,89 @@ def _serialize_tree(tree: list[dict]) -> list[dict]:
              "directive": str(n["directive"])[:80]} for n in tree]
 
 
-def run(image: Image.Image, brand: str = "the brand", target: list | None = None,
-        depth: int = 1) -> dict:
-    """Optimize an ad. Pass the brand's `target` box (normalized [x,y,w,h]) when known —
-    a curated box gives a meaningful baseline; auto-detection is a noisy fallback.
-    LIVE path uses depth=1; depth>1 runs the full tree-search (precompute the showcase).
-    Never regresses — the original is the floor."""
-    # Stage 1: brand brief (+ target detection only if no curated box was given).
+def _make_scorer(target: list, brand: str, judged: dict[int, dict]):
+    """Retoucher fitness = DeepGaze attention, GATED by the LLM-judge. Variants that
+    score below the brand-fit gate are scaled down proportionally so a garish, high-
+    attention but off-brand edit can't win on attention alone. Per-variant verdicts are
+    recorded in `judged` (keyed by image id) for the result + the Judge step."""
+    def _score(variant: Image.Image) -> float:
+        att = dg.score_only(variant, target)
+        if not settings.use_judge:
+            return att
+        quality, reason = gemini.judge(variant, brand)
+        gate = settings.judge_gate
+        vetoed = quality < gate
+        judged[id(variant)] = {"judge": round(quality, 3), "reason": reason, "vetoed": vetoed}
+        return round(att * quality / gate, 4) if vetoed else att
+    return _score
+
+
+def _judge_summary(winner: dict | None, n_vetoed: int) -> str:
+    base = f"approved winner (brand-fit {winner['judge']})" if winner else "kept original"
+    if n_vetoed:
+        base += f"; vetoed {n_vetoed} off-brand variant(s)"
+    return base[:110]
+
+
+# --- Director steps (each takes & returns the run state dict; composed below) -------
+def _step_prep(state: dict) -> dict:
+    """Insider brief + target detection (concurrent), then the baseline Eye reading."""
+    image, brand, target = state["image"], state["brand"], state["target"]
     with cf.ThreadPoolExecutor(max_workers=2) as ex:
         f_brief = ex.submit(insider, brand)
         f_target = ex.submit(gemini.detect_target, image) if target is None else None
-        brief = f_brief.result()
+        state["brief"] = f_brief.result()
         if f_target is not None:
             target = f_target.result()
+    state["target"] = target
+    state["before"] = dg.predict(image, target)
+    state["baseline"] = state["before"]["attention_score"]
+    return state
 
-    before = dg.predict(image, target)
-    baseline = before["attention_score"]
 
-    # Stage 2: distractor naming + competitor RAG are independent — run concurrently.
+def _step_context(state: dict) -> dict:
+    """Distractor naming + competitor RAG (Scout) — independent, run concurrently."""
     with cf.ThreadPoolExecutor(max_workers=2) as ex:
-        f_names = ex.submit(gemini.label_distractors, image, before["distractors"])
-        f_insights = ex.submit(scout, brand, brief)
+        f_names = ex.submit(gemini.label_distractors, state["image"], state["before"]["distractors"])
+        f_insights = ex.submit(scout, state["brand"], state["brief"])
         f_names.result()
-        insights = f_insights.result()
+        state["insights"] = f_insights.result()
+    return state
 
-    pool = _directive_pool(before, insights, brand)
+
+def _step_optimize(state: dict) -> dict:
+    """Retoucher: branching tree-search over edits, scored by the Judge-gated fitness."""
+    pool = _directive_pool(state["before"], state["insights"], state["brand"])
 
     def propose(_img, node, n):
         start = (node["depth"] * n) % len(pool)  # rotate so each round tries fresh avenues
         return (pool[start:] + pool[:start])[:n]
 
-    result = branch.search(
-        image, baseline, propose,
+    judged: dict[int, dict] = {}
+    state["result"] = branch.search(
+        state["image"], state["baseline"], propose,
         edit=lambda img, directive: gemini.edit_image(img, directive),
-        score=lambda variant: dg.score_only(variant, target),
-        breadth=settings.breadth, max_depth=depth, beam_width=1,
+        score=_make_scorer(state["target"], state["brand"], judged),
+        breadth=settings.breadth, max_depth=state["depth"], beam_width=1,
         target_score=settings.target_score, epsilon=settings.epsilon,
     )
+    state["judged"] = judged
+    return state
+
+
+def _step_finalize(state: dict) -> dict:
+    """Final Eye reading + assemble the AgentsResult dict (incl. the Judge step)."""
+    before, result, judged = state["before"], state["result"], state["judged"]
+    brand, brief, insights, target = state["brand"], state["brief"], state["insights"], state["target"]
 
     best_img = result["best_image"]
     after = dg.predict(best_img, target) if result["improved"] else before
     final = after["attention_score"]
+    baseline = state["baseline"]
     thief = before["distractors"][0]["desc"] if before["distractors"] else "competing elements"
     n_variants = sum(1 for n in result["tree"] if n["parent"] is not None)
+    n_vetoed = sum(1 for v in judged.values() if v["vetoed"])
+    winner = judged.get(id(best_img))
 
     steps = [
         {"agent": "Insider", "status": "done", "summary": f"{brand}: {brief.get('tone', '')}"[:90]},
@@ -116,20 +160,67 @@ def run(image: Image.Image, brand: str = "the brand", target: list | None = None
         {"agent": "Eye", "status": "done", "summary": f"baseline {round(baseline * 100)}% on target"},
         {"agent": "Retoucher", "status": "done",
          "summary": f"explored {n_variants} edits across {result['rounds']} rounds"},
+        {"agent": "Judge", "status": "done", "summary": _judge_summary(winner, n_vetoed)},
         {"agent": "Eye", "status": "done", "summary": f"best {round(final * 100)}% on target"},
     ]
 
-    return {
+    state["output"] = {
         "baseline_score": baseline,
         "final_score": final,
         "delta": round(final - baseline, 4),
+        "judge_score": winner["judge"] if winner else None,
         "brand_brief": brief,
         "competitive_insights": insights,
         "heatmap_before": before["heatmap_png"],
         "heatmap_after": after["heatmap_png"],
         "variant_png": dg.to_data_url(best_img),
-        "rationale": (f"Explored {n_variants} edits in a branching search; kept the variant that "
-                      f"best reduced the {thief} and raised attention on the target."),
+        "rationale": (f"Explored {n_variants} edits in a branching search; kept the variant the "
+                      f"Judge approved that best reduced the {thief} and raised attention on the target."),
         "tree": _serialize_tree(result["tree"]),
         "iterations": steps,
     }
+    return state
+
+
+_STEPS = [(_step_prep, "Prep"), (_step_context, "Insider+Scout"),
+          (_step_optimize, "Retoucher+Judge"), (_step_finalize, "Finalize")]
+
+
+def _build_director():
+    """Compose the steps as a LangChain LCEL chain so LangChain orchestrates the run
+    and LangSmith traces each agent step. Returns (runnable_or_callable, is_langchain).
+    Falls back to a plain sequential callable if LangChain isn't available."""
+    if settings.use_langchain:
+        try:
+            from langchain_core.runnables import RunnableLambda
+            chain = None
+            for fn, name in _STEPS:
+                step = RunnableLambda(fn).with_config(run_name=name)
+                chain = step if chain is None else chain | step
+            return chain, True
+        except Exception:
+            pass
+
+    def _plain(state: dict) -> dict:
+        for fn, _ in _STEPS:
+            state = fn(state)
+        return state
+    return _plain, False
+
+
+def run(image: Image.Image, brand: str = "the brand", target: list | None = None,
+        depth: int = 1) -> dict:
+    """Optimize an ad. Pass the brand's `target` box (normalized [x,y,w,h]) when known —
+    a curated box gives a meaningful baseline; auto-detection is a noisy fallback.
+    LIVE path uses depth=1; depth>1 runs the full tree-search (precompute the showcase).
+    Never regresses — the original is the floor."""
+    state = {"image": image, "brand": brand, "target": target, "depth": depth}
+    director, is_langchain = _build_director()
+    if is_langchain:
+        state = director.invoke(state, config={
+            "run_name": "Pixel Director",
+            "metadata": {"brand": brand, "depth": depth},
+        })
+    else:
+        state = director(state)
+    return state["output"]

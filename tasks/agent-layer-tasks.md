@@ -71,6 +71,15 @@ Previously Scout retrieved only from a static 12-ad corpus (`pinecone_seed.ADS` 
 
 ---
 
+## Coordination note — Judge wired into fitness + LangChain orchestration (C → B) ✅ DONE
+Two Phase-2/3 items wired in `agents.py` (+ `config.py`, `requirements.txt`):
+- **Judge (LLM-as-judge) now gates the Retoucher's fitness.** `_make_scorer()` scores each variant as DeepGaze attention, but if `gemini.judge(variant, brand)` returns brand-fit below `settings.judge_gate` (0.45) the score is scaled down proportionally — so a **garish, high-attention but off-brand variant can't win on attention alone** (the anti-reward-hacking pillar). The headline `baseline_score`/`final_score` stay **pure DeepGaze** (re-derived via `dg.predict`), so the demo number is honest. Adds a **"Judge"** step to `iterations[]` and a `judge_score` field to the result. Per-variant verdicts recorded by image id. Verified: attention 0.60 garish → fitness 0.27, loses to a clean 0.40. Toggle `JUDGE=0`. Latency: 1 judge call per scored variant, but it runs *inside* the round's thread pool (alongside the edit), so ~+1 judge of wall time per round, not per variant.
+- **LangChain now orchestrates the Director.** The pipeline is refactored into 4 step fns (`_step_prep`/`_context`/`_optimize`/`_finalize`) composed as an **LCEL chain** (`RunnableLambda | … .invoke()`) — load-bearing, **needs no API key / network**. Plain sequential fallback if `langchain-core` is absent (`_build_director` returns `(callable, False)`), so the app never breaks. Toggle `LANGCHAIN=0`.
+- **LangSmith tracing is optional** (observability only — NOT needed for orchestration). `config.py` now auto-disables `LANGCHAIN_TRACING_V2` when no LangSmith key is present, to kill the 401-on-every-run spam. Drop a `LANGCHAIN_API_KEY` in `.env` later and tracing self-enables (the rising-score chart). `requirements.txt`: added `langchain-core` (pulls langsmith transitively).
+- `agents.py`/`config.py`/`requirements.txt` are B/A files — flagging; revert/adjust freely.
+
+---
+
 ## Task breakdown (small, sequenced, non-interfering — check off as you go)
 
 ### Phase 1 — Single-variant loop (do first)
