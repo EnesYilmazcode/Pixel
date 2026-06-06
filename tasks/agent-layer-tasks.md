@@ -49,6 +49,11 @@ Yes, your plan (4–5 branches, score each, recurse, stop at a threshold) is goo
 
 ---
 
+## Coordination note — how the canvas gets live node status (B ↔ C)
+`POST /agents` is **synchronous**: per the frozen contract it returns the full result (including `iterations: [{agent, status, summary}]`) only when the whole loop finishes. So the canvas "light-up" (grey → pulsing → green) should **replay `iterations[]` client-side** after the response lands (a timed reveal), NOT assume live server push. This keeps B simple (no SSE/websocket infra) and the demo reliable. If true live streaming is wanted later, B adds a stretch `GET /agents/stream` (SSE) — but **only after the synchronous path is solid. Confirm the replay approach with C so C doesn't wait on streaming that isn't coming.**
+
+---
+
 ## Task breakdown (small, sequenced, non-interfering — check off as you go)
 
 ### Phase 1 — Single-variant loop (do first)
