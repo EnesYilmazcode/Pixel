@@ -256,6 +256,46 @@ pixel/
 
 **Sources:** [aspect-ratio regression thread (Google ack)](https://discuss.ai.google.dev/t/gemini-2-5-flash-nano-banana-auto-aspect-ratio-issue-output-image-has-different-aspect-ratio/108225) · [official prompt guide (localized-edit template)](https://developers.googleblog.com/en/how-to-prompt-gemini-2-5-flash-image-generation-for-the-best-results/) · [GA + aspect ratios](https://developers.googleblog.com/en/gemini-2-5-flash-image-now-ready-for-production-with-new-aspect-ratios/) · [mask inpainting is Imagen-only](https://firebase.google.com/docs/ai-logic/edit-images-imagen-overview)
 
+### Drop-in helper (structure-agnostic — paste into the scoring path / `Retoucher` + `Eye`)
+```python
+from PIL import Image, ImageOps
+import numpy as np
+
+def align_to_input(edited: Image.Image, in_w: int, in_h: int) -> Image.Image:
+    """Make the edited image EXACTLY the input's WxH so before/after are comparable.
+    Pad-to-aspect (no stretch) then resize, so geometry isn't distorted — distortion
+    would itself change saliency."""
+    if edited.size == (in_w, in_h):
+        return edited
+    return ImageOps.pad(edited, (in_w, in_h), method=Image.LANCZOS, color=(0, 0, 0))
+
+def attention_in_box(density: np.ndarray, nbox) -> float:
+    """density: DeepGaze prob map. nbox: NORMALIZED (x,y,w,h) in [0,1].
+    Returns fraction of total attention mass inside the box (resolution-invariant)."""
+    H, W = density.shape
+    x, y, bw, bh = nbox
+    x0, y0 = int(x * W), int(y * H)
+    x1, y1 = int((x + bw) * W), int((y + bh) * H)
+    d = density / density.sum()                      # re-normalize after any resize
+    return float(d[y0:y1, x0:x1].sum())
+
+def integrity_ok(in_w, in_h, raw_out_w, raw_out_h, target_relocated, ar_tol=0.06):
+    """Reject a degenerate edit before trusting its score."""
+    in_ar, out_ar = in_w / in_h, raw_out_w / raw_out_h
+    if abs(in_ar - out_ar) / in_ar > ar_tol:
+        return False                                 # aspect changed too much
+    return target_relocated                          # detector must re-find logo/CTA
+
+# Flow per edit (Retoucher -> Eye):
+#   in_w, in_h = original.size
+#   raw = gemini_edit(original, "change only ...; keep everything else identical; don't crop")
+#   if not integrity_ok(in_w, in_h, *raw.size, detect_target(raw)): redo / keep best
+#   aligned = align_to_input(raw, in_w, in_h)
+#   nbox = detect_target_nbox(aligned)               # RE-DETECT, don't reuse the old box
+#   score_after = attention_in_box(deepgaze(aligned), nbox)
+```
+`detect_target_nbox` = a Gemini vision call returning a normalized bbox, or a template match. Report both the original-box and re-detected-box scores; agreement = trustworthy delta.
+
 ---
 
 ## Voice / Multimodal Input — DECISION
