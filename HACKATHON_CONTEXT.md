@@ -183,6 +183,38 @@ The official models live at **github.com/matthias-k/DeepGaze** (PyTorch, pretrai
 
 ---
 
+## Session Research Log — June 6 (open product questions)
+
+> Captured live during build planning. These are **proposals/decisions for discussion**, not yet locked. Flag in standup before acting.
+
+### 1. LangSmith — observability + eval for the agent loop
+LangSmith (LangChain's tracing/eval platform) fits Pixel cheaply because our whole pitch is *an iterative agent loop with an objective score*.
+
+| Use | Effort | Payoff |
+|---|---|---|
+| **Trace the optimize loop** | ~5 min (3 env vars: `LANGCHAIN_TRACING_V2`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT`) | Every iteration is a nested trace (score in → Gemini edit → score out). Debug *which* step regressed instead of print-statements. |
+| **Log `attention_score` as run feedback** | small | Free chart of attention-per-iteration → an objective **rising-score curve** as a judge artifact (stronger than one before/after pair). `client.create_feedback(run_id, key="attention_score", score=...)`. |
+| **Dataset eval over 5–10 sample ads** *(stretch)* | medium (needs sample data) | Turns "worked on one image" into "improved attention on N/10" — quantitative proof. |
+
+**Why it earns points:** makes the **LangChain** integration *load-bearing, not name-dropped* — we observe + evaluate the loop, not just call it. Doubles as the demo dashboard.
+**Recommendation:** do tracing + score-logging (nearly free, big debug + demo value); dataset eval only if core loop is solid.
+
+### 2. Input mode — upload real ad vs. text→research→generate
+Question raised: instead of uploading a pre-existing ad, type text → an agent does market research on the company → generate an ad from scratch → then optimize.
+
+**Decision: keep BOTH as two demo modes; do not replace upload.**
+
+| Mode | Flow | Role |
+|---|---|---|
+| **A — the proof** (de-risked core) | Upload a **real brand ad** → optimize → score goes up | Credibility. Baseline is a real agency-shipped ad, so the lift is unimpeachable. |
+| **B — the wow** (optional front door) | Type company name → research agent (+ Pinecone RAG) → generate ad → hand off to the **same** gaze loop | Hook + richer multi-agent story (research → brief → generate → optimize). **Pre-cache ≥1 company** so a live failure can't sink the demo. |
+
+**Key risk with text-in:** if the agent generates the "before," we're optimizing our own strawman — a judge can ask "did attention rise because the editor is good, or because v1 was deliberately weak?" Uploading a real ad removes that doubt. The score lift is *objectively real* either way (DeepGaze is source-agnostic), but the real-ad baseline is more persuasive.
+**Note:** "from scratch on the day" = our **code**, not the ad. Uploading a real brand ad as demo *input* is fine (it's data).
+**Open question for Enes:** in Mode B, is optimization still the star (generate rough v1 → visibly improve), or is generation the point and optimize secondary? Changes whether the generator aims for "good" or "good enough to then improve."
+
+---
+
 ## Additional Context (raw dump — to be organized later)
 
 <!-- Paste more context below this line. -->
