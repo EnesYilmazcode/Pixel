@@ -1,134 +1,245 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UserButton } from "@clerk/react";
-import { predict, runAgents, USE_MOCK, type PredictResult, type AgentsResult } from "./api";
+import { predict, runAgents, USE_MOCK_PREDICT, MODE_LABEL, type PredictResult, type AgentsResult } from "./api";
+import { SAMPLES, type Sample } from "./samples";
+
+// UserButton must live inside a ClerkProvider; main.tsx only mounts one when a key exists.
+const HAS_CLERK = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
   const [imgUrl, setImgUrl] = useState<string>("");
   const [brand, setBrand] = useState("Coca-Cola");
+  const [active, setActive] = useState<Sample | null>(null);
   const [pred, setPred] = useState<PredictResult | null>(null);
   const [agents, setAgents] = useState<AgentsResult | null>(null);
   const [busy, setBusy] = useState<string>("");
 
+  function reset() {
+    setFile(null); setImgUrl(""); setActive(null); setPred(null); setAgents(null);
+  }
+
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFile(f);
-    setImgUrl(URL.createObjectURL(f));
-    setPred(null);
-    setAgents(null);
+    setActive(null); setPred(null); setAgents(null);
+    setFile(f); setImgUrl(URL.createObjectURL(f));
+  }
+
+  async function loadSample(s: Sample) {
+    setBusy("Loading campaign…");
+    try {
+      const blob = await (await fetch(s.img)).blob();
+      const f = new File([blob], `${s.id}.jpg`, { type: blob.type || "image/jpeg" });
+      setActive(s); setBrand(s.brand); setAgents(null); setPred(null);
+      setFile(f); setImgUrl(s.img);
+      setBusy("Analyzing attention…");
+      setPred(await predict(f, s.target_box)); // real backend scores attention in the brand's region
+    } catch (e) {
+      alert(String(e));
+    } finally {
+      setBusy("");
+    }
   }
 
   async function analyze() {
     if (!file) return;
     setBusy("Analyzing attention…");
-    try {
-      setPred(await predict(file));
-    } catch (e) {
-      alert(String(e));
-    } finally {
-      setBusy("");
-    }
+    try { setPred(await predict(file, active?.target_box)); }
+    catch (e) { alert(String(e)); }
+    finally { setBusy(""); }
   }
 
   async function optimize() {
     if (!file) return;
     setBusy("Agents optimizing…");
-    try {
-      setAgents(await runAgents(file, brand));
-    } catch (e) {
-      alert(String(e));
-    } finally {
-      setBusy("");
-    }
+    try { setAgents(await runAgents(file, brand)); }
+    catch (e) { alert(String(e)); }
+    finally { setBusy(""); }
   }
 
   const score = agents?.final_score ?? pred?.attention_score;
+  // prefer the picked sample's known target region for the overlay (mock score is generic)
+  const targetBox = active?.target_box ?? pred?.target_box;
 
   return (
     <div className="app">
       <header>
-        <h1>Pixel</h1>
-        <span className="tag">see where attention goes · fix it · prove the lift</span>
-        {USE_MOCK && <span className="mock">MOCK DATA</span>}
-        <span className="auth">
-          <UserButton />
+        <span className="brandmark">
+          <span className="dot" />
+          <h1>Pixel</h1>
         </span>
+        <span className="tag">see where attention goes · fix it · prove the lift</span>
+        <span className="mock">{MODE_LABEL}</span>
+        {HAS_CLERK && <span className="auth"><UserButton /></span>}
       </header>
 
-      <div className="controls">
-        <input type="file" accept="image/*" onChange={onPick} />
-        <input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Brand" />
-        <button onClick={analyze} disabled={!file || !!busy}>Analyze</button>
-        <button onClick={optimize} disabled={!file || !!busy} className="primary">Optimize</button>
-        {busy && <span className="busy">{busy}</span>}
-      </div>
+      {!imgUrl ? (
+        <>
+          <section className="hero">
+            <p className="eyebrow">Gaze-driven campaign optimizer</p>
+            <h2>See where eyes go. <em>Move them</em> to your brand.</h2>
+            <p>
+              Pick a campaign below and Pixel predicts where human attention lands,
+              names the thieves stealing it, then lets a team of agents redirect it —
+              proving the lift with a before&nbsp;→&nbsp;after attention score.
+            </p>
+          </section>
 
-      <div className="stage">
-        <div className="canvas">
-          {imgUrl ? (
-            <div className="frame">
-              <img src={imgUrl} alt="ad" />
-              {pred && <HeatmapOverlay pred={pred} />}
-              {pred && <TargetBox box={pred.target_box} />}
+          <div className="gallery-head">
+            <h3>Sample campaigns</h3>
+            <span className="hint">click one to analyze →</span>
+          </div>
+          <div className="gallery">
+            {SAMPLES.map((s) => (
+              <button className="card" key={s.id} onClick={() => loadSample(s)} title={s.target_desc}>
+                <span className="thumb">
+                  <span className="ph" style={{ background: s.tint }}>{s.brand[0]}</span>
+                  <img
+                    src={s.img}
+                    alt={`${s.brand} — ${s.campaign}`}
+                    loading="lazy"
+                    onLoad={(e) => ((e.currentTarget.previousElementSibling as HTMLElement).style.display = "none")}
+                  />
+                  <span className="go">Analyze</span>
+                </span>
+                <span className="meta">
+                  <span className="b"><span className="swatch" style={{ background: s.tint }} />{s.brand}</span>
+                  <span className="c">{s.campaign}{s.note ? " ·*" : ""}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="uploadrow">
+            <label className="filebtn">
+              ↑ Upload your own
+              <input type="file" accept="image/*" onChange={onPick} />
+            </label>
+            <span className="or">or use a sample above</span>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="controls">
+            <label className="filebtn">
+              ↑ New image
+              <input type="file" accept="image/*" onChange={onPick} />
+            </label>
+            <span className="field">
+              <label>Brand</label>
+              <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Brand" />
+            </span>
+            <button onClick={analyze} disabled={!file || !!busy}>Analyze</button>
+            <button onClick={optimize} disabled={!file || !!busy} className="primary">Optimize ✦</button>
+            {busy && <span className="busy">{busy}</span>}
+            <span className="spacer" />
+            <button className="ghost" onClick={reset}>← Gallery</button>
+          </div>
+
+          <div className="stage">
+            <div className="canvas">
+              <div className="frame">
+                <img className="base" src={imgUrl} alt="campaign" />
+                {pred && <HeatmapOverlay pred={pred} />}
+                {pred && targetBox && <TargetBox box={targetBox} />}
+                {pred?.scanpath?.map((p) => (
+                  <span className="scan-dot" key={p.order} style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%` }}>
+                    {p.order}
+                  </span>
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="empty">Upload an ad to begin</div>
-          )}
-        </div>
 
-        <aside className="panel">
-          {score !== undefined && (
-            <div className="score">
-              <div className="num">{Math.round(score * 100)}%</div>
-              <div className="lbl">attention on target</div>
-              {agents && (
-                <div className="delta">
-                  {Math.round(agents.baseline_score * 100)}% → {Math.round(agents.final_score * 100)}%
+            <aside className="panel">
+              {score !== undefined && (
+                <div className="score">
+                  <div className="num"><Counter value={score * 100} /><span className="pct">%</span></div>
+                  <div className="lbl">attention on target</div>
+                  {agents && (
+                    <div className="delta">
+                      <span className="vals">{Math.round(agents.baseline_score * 100)}%</span>
+                      <span className="arrow">→</span>
+                      <span className="vals">{Math.round(agents.final_score * 100)}%</span>
+                      <span className="lift">+{Math.round(agents.delta * 100)} pts</span>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {pred?.distractors?.length ? (
-            <div className="block">
-              <h3>Attention thieves</h3>
-              {pred.distractors.map((d, i) => (
-                <div className="row" key={i}>
-                  <span>{d.desc}</span>
-                  <b>{Math.round(d.share * 100)}%</b>
+              {pred?.distractors?.length ? (
+                <div className="block">
+                  <h3>Attention thieves</h3>
+                  {pred.distractors.map((d, i) => (
+                    <div className="row" key={i} style={{ display: "block" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span className="thief">{d.desc}</span>
+                        <b>{Math.round(d.share * 100)}%</b>
+                      </div>
+                      <div className="bar"><i style={{ width: `${Math.min(100, d.share * 100)}%` }} /></div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : null}
+              ) : null}
 
-          {agents && (
-            <div className="block">
-              <h3>Agent pipeline</h3>
-              {agents.iterations.map((s, i) => (
-                <div className="row" key={i}>
-                  <span><b>{s.agent}</b> — {s.summary}</span>
+              {agents && (
+                <div className="block pipe">
+                  <h3>Agent pipeline</h3>
+                  {agents.iterations.map((s, i) => (
+                    <div className="step" key={i}>
+                      <span className="ix">{i + 1}</span>
+                      <span>
+                        <div className="who">{s.agent}</div>
+                        <div className="what">{s.summary}</div>
+                      </span>
+                    </div>
+                  ))}
+                  <p className="rationale">“{agents.rationale}”</p>
                 </div>
-              ))}
-              <p className="rationale">{agents.rationale}</p>
-            </div>
-          )}
-        </aside>
-      </div>
+              )}
+
+              {active?.note && (
+                <p className="rationale" style={{ borderTop: "none", paddingTop: 0 }}>
+                  * {active.brand}: {active.note}.
+                </p>
+              )}
+            </aside>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-// Heatmap: real data URL from backend, else a CSS-gradient stand-in so mock mode still looks alive.
+// Animated count-up for the hero score (no dependency; rAF easing).
+function Counter({ value }: { value: number }) {
+  const [n, setN] = useState(0);
+  const from = useRef(0);
+  useEffect(() => {
+    const start = performance.now();
+    const a = from.current, b = value, dur = 650;
+    let raf = 0;
+    const tick = (t: number) => {
+      const k = Math.min(1, (t - start) / dur);
+      const e = 1 - Math.pow(1 - k, 3); // easeOutCubic
+      setN(a + (b - a) * e);
+      if (k < 1) raf = requestAnimationFrame(tick);
+      else from.current = b;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{Math.round(n)}</>;
+}
+
+// Heatmap: real PNG from backend, else a CSS-gradient stand-in so mock mode looks alive.
 function HeatmapOverlay({ pred }: { pred: PredictResult }) {
-  if (pred.heatmap_png) {
-    return <img className="heat" src={pred.heatmap_png} alt="heatmap" />;
-  }
+  if (pred.heatmap_png) return <img className="heat" src={pred.heatmap_png} alt="attention heatmap" />;
   const blobs = pred.distractors
     .map((d) => {
       const cx = (d.region[0] + d.region[2] / 2) * 100;
       const cy = (d.region[1] + d.region[3] / 2) * 100;
-      return `radial-gradient(circle at ${cx}% ${cy}%, rgba(255,0,0,${0.15 + d.share}) 0%, rgba(255,0,0,0) 22%)`;
+      return `radial-gradient(circle at ${cx}% ${cy}%, rgba(238,61,35,${0.35 + d.share}) 0%, rgba(238,61,35,0) 26%)`;
     })
     .join(",");
   return <div className="heat" style={{ backgroundImage: blobs }} />;
@@ -137,9 +248,8 @@ function HeatmapOverlay({ pred }: { pred: PredictResult }) {
 function TargetBox({ box }: { box: [number, number, number, number] }) {
   const [x, y, w, h] = box;
   return (
-    <div
-      className="target"
-      style={{ left: `${x * 100}%`, top: `${y * 100}%`, width: `${w * 100}%`, height: `${h * 100}%` }}
-    />
+    <div className="target" style={{ left: `${x * 100}%`, top: `${y * 100}%`, width: `${w * 100}%`, height: `${h * 100}%` }}>
+      <span className="tlabel">target</span>
+    </div>
   );
 }

@@ -5,13 +5,11 @@ import App from "./App";
 import Landing from "./Landing";
 import "./index.css";
 
+// Auth is optional: with a Clerk key we show the public Landing → sign-in → playground.
+// Without one (dev/demo), we skip auth and mount the playground directly so the app
+// always boots. This matches .env.example's "app boots without it" note.
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-if (!publishableKey) {
-  throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY in .env.local");
-}
 
-// Public landing for signed-out visitors; the playground mounts only once
-// signed in. Auth fires from the landing's modal buttons, not on load.
 function Gate() {
   return (
     <>
@@ -34,8 +32,12 @@ function Gate() {
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">
-      <Gate />
-    </ClerkProvider>
+    {publishableKey ? (
+      <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">
+        <Gate />
+      </ClerkProvider>
+    ) : (
+      <App />
+    )}
   </React.StrictMode>
 );

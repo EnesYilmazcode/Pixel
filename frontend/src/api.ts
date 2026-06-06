@@ -1,8 +1,12 @@
 // API client + types. Matches the frozen contract in WORK_ALLOCATION.md.
-// Flip USE_MOCK to false once Instance A's /predict + /edit are live.
+// Per-endpoint mock flags: /predict is live (real DeepGaze backend), /agents is
+// mocked until the competitive.py:55 brief["tone"] list/str bug is fixed (it 500s).
 import mock from "./mock.json";
 
-export const USE_MOCK = true;
+export const USE_MOCK_PREDICT = false; // real DeepGaze via Vite proxy → :8000
+export const USE_MOCK_AGENTS = true;   // TODO: flip once /agents stops 500ing
+export const USE_MOCK = USE_MOCK_PREDICT && USE_MOCK_AGENTS;
+export const MODE_LABEL = USE_MOCK_PREDICT ? "Mock data" : "Live gaze · mock optimize";
 
 export type Box = [number, number, number, number]; // normalized x,y,w,h
 export type Distractor = { region: Box; share: number; desc: string };
@@ -39,17 +43,18 @@ export type AgentsResult = {
   iterations: AgentStep[];
 };
 
-export async function predict(file: File): Promise<PredictResult> {
-  if (USE_MOCK) return mock.predict as PredictResult;
+export async function predict(file: File, target?: Box): Promise<PredictResult> {
+  if (USE_MOCK_PREDICT) return mock.predict as PredictResult;
   const fd = new FormData();
   fd.append("image", file);
+  if (target) fd.append("target", JSON.stringify(target)); // score against the brand's region
   const r = await fetch("/predict", { method: "POST", body: fd });
   if (!r.ok) throw new Error(`/predict ${r.status}`);
   return r.json();
 }
 
 export async function runAgents(file: File, brand: string): Promise<AgentsResult> {
-  if (USE_MOCK) return mock.agents as AgentsResult;
+  if (USE_MOCK_AGENTS) return mock.agents as AgentsResult;
   const fd = new FormData();
   fd.append("image", file);
   fd.append("brand", brand);
