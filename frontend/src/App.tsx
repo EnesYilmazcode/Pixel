@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { UserButton } from "@clerk/react";
-import { predict, runAgents, USE_MOCK_PREDICT, MODE_LABEL, type PredictResult, type AgentsResult } from "./api";
+import { predict, runAgents, USE_MOCK_PREDICT, MODE_LABEL, type PredictResult, type AgentsResult, type Fixation } from "./api";
 import { SAMPLES, type Sample } from "./samples";
 
 // UserButton must live inside a ClerkProvider; main.tsx only mounts one when a key exists.
@@ -143,11 +143,7 @@ export default function App() {
                 <img className="base" src={imgUrl} alt="campaign" />
                 {pred && <HeatmapOverlay pred={pred} />}
                 {pred && targetBox && <TargetBox box={targetBox} />}
-                {pred?.scanpath?.map((p) => (
-                  <span className="scan-dot" key={p.order} style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%` }}>
-                    {p.order}
-                  </span>
-                ))}
+                {pred?.scanpath && <Scanpath pts={pred.scanpath} />}
               </div>
             </div>
 
@@ -243,6 +239,30 @@ function HeatmapOverlay({ pred }: { pred: PredictResult }) {
     })
     .join(",");
   return <div className="heat" style={{ backgroundImage: blobs }} />;
+}
+
+// Scanpath: the predicted gaze ORDER. A connected 1→2→3→4 path (line drawn through
+// the fixations) with numbered nodes that pop in sequence — "where eyes move, and when".
+function Scanpath({ pts }: { pts: Fixation[] }) {
+  if (!pts?.length) return null;
+  const s = [...pts].sort((a, b) => a.order - b.order);
+  const poly = s.map((p) => `${p.x * 100},${p.y * 100}`).join(" ");
+  return (
+    <>
+      <svg className="scan" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <polyline className="scan-line" points={poly} pathLength={1} />
+      </svg>
+      {s.map((p, i) => (
+        <span
+          className="scan-dot"
+          key={p.order}
+          style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%`, animationDelay: `${0.15 + i * 0.13}s` }}
+        >
+          {p.order}
+        </span>
+      ))}
+    </>
+  );
 }
 
 function TargetBox({ box }: { box: [number, number, number, number] }) {

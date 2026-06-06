@@ -1,24 +1,31 @@
-# Tasks — Frontend / Visuals / Voice (Instance C — me)
+# Tasks — Frontend / Visuals (Instance C)
 
-> **Owns only `frontend/`** + `.env.example`. Never touches `backend/`. Builds against `frontend/src/mock.json` (the frozen contract); flips `USE_MOCK=false` to go live. Commit small + often; **pull/rebase before every push**.
+> Owns `frontend/` + `.env.example`. Build against `mock.json`; per-endpoint live flags in `api.ts`.
+> **Submit 3:00 PM · video demo 2:30 PM · ~build until 2:25.** Prioritize what the camera sees.
 
-## Done
-- [x] Vite + React + React Flow scaffold; dark demo theme.
-- [x] `api.ts` typed client matching the frozen contract (`/predict`, `/edit`, `/agents`) with `USE_MOCK` flag + Vite proxy.
-- [x] `mock.json` contract-shaped sample (also serves as the live contract reference for A & B).
-- [x] App shell: upload → Analyze (heatmap overlay + attention score + distractor list) → Optimize (agent pipeline + before/after delta). CSS-gradient heatmap fallback in mock mode.
+## ✅ Done (today)
+- [x] Vite + React scaffold, typed `api.ts` client + Vite proxy to backend.
+- [x] **Light-mode redesign** — "optical instrument" theme, Fraunces/Hanken/Spline fonts, atmosphere.
+- [x] **Sample campaign gallery** — 8 real ad images (`public/samples/*.jpg`) + `samples.ts` w/ per-brand target boxes. Click → analyze.
+- [x] **Real DeepGaze wired** — `/predict` is LIVE (sends each sample's target box; real heatmap + score render).
+- [x] **Animated score count-up** + before→after delta pill.
+- [x] **Connected scanpath** — 1→2→3→4 gaze path (drawn line + sequential numbered nodes).
+- [x] Distractor "attention thieves" bars; agent pipeline panel from `iterations[]`.
+- [x] Clerk auth degrades gracefully (boots to playground w/o key).
+- [x] Removed obsolete category screenshots (kept `context.md`).
 
-## Next (priority order — each is an isolated component, no collisions)
-- [ ] **React Flow agent canvas** (`components/AgentFlow.tsx`) — nodes Director / Insider / Scout / Eye / Retoucher (+ Judge). Grey → pulsing → green as `iterations[]` progress. Insider+Scout+Eye fire in parallel, edges converge on Director. *This wins the Multi-Agent Interface track.*
-- [ ] **Before/after wipe slider** (`components/HeatmapWipe.tsx`) — drag to wipe between original and optimized heatmap on the same ad. The signature visual.
-- [ ] **Animated score counter** — count-up `12% → 41%` with the delta highlighted; trigger on Optimize complete.
-- [ ] **Branch tree view** (if B ships branching) — render the variant tree (round → 3 variants → chosen), show DeepGaze + Judge score per node.
-- [ ] **Attention-per-iteration chart** — small line chart of the rising score (from `iterations` / LangSmith feedback).
-- [ ] **Voice (Web Speech)** (`components/Voice.tsx`) — push-to-talk: `SpeechRecognition` → fill the brand/instruction → call existing endpoint → `speechSynthesis` reads the rationale back. ~45 min; cannot break the core loop (pure wrapper). Hard stop ~2:15.
-- [ ] **Mode B front door** — a "type a company instead" input that hits the generate path, then reuses the same optimize UI.
-- [ ] **Demo polish** — per-node loading states, distractor callout box on the image, target-region picker, graceful errors.
+## 🎯 Must-have before 2:30 (the demo money shot)
+1. [ ] **Show the AFTER, not just numbers** (~15 min) — on Optimize, swap the canvas to the optimized image + after-heatmap so the lift is *visible*, not just a counter. Needs a real `variant_png`/`heatmap_after` (see decision A).
+2. [ ] **Precompute ONE hero result** (~10 min) — run real `/agents` on the best "misdirected attention" sample now, bake `variant_png` + `heatmap_before/after` + the rising score into `mock.json` so the on-stage click is INSTANT and shows a real edit. Avoids the 65s live wait.
+3. [ ] **End-to-end dry run** (~5 min) — click hero sample → real heatmap + scanpath → Optimize → before/after + agent pipeline. Confirm no console errors, images load.
 
-## Integration checklist
-- [ ] When A's `/predict` + `/edit` are live: set `USE_MOCK=false`, verify proxy, confirm heatmap data URLs render.
-- [ ] When B's `/agents` is live: confirm the pipeline/canvas animates from real `iterations[]`.
-- [ ] Keep `mock.json` in sync if the contract changes (announce contract changes to A & B first).
+## ✨ Nice-to-have (only if green by ~2:00)
+- [ ] **Before/after wipe slider** on the same frame — the signature visual (drag to reveal optimized heatmap).
+- [ ] **Agent nodes**, not a list — render the 5 agents (Insider/Scout/Eye/Retoucher/Eye) as connected nodes that light up grey→green. (Full React Flow is risky on time; a CSS node row is the safe version.)
+
+## ⛔ Cut for time (post-submission)
+- Voice (Web Speech), Mode-B "type a company", branch tree view, LangSmith chart.
+
+## ❓ Open decisions (need Enes)
+- **A. Optimize in the demo:** (1) **mock, instant, dramatic** 12%→41% but fake edit image; (2) **real, true edit + after-heatmap but ~65s** live; (3) **precompute hero → instant AND real** ← recommended.
+- **B. Big-lift sample:** current samples are clean product shots (small real lift). Want me to grab a face-vs-logo ad so the optimizer has a real thief to fix?
