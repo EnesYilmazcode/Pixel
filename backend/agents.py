@@ -53,6 +53,10 @@ def _directive_pool(before: dict, insights: dict, brand: str) -> list[str]:
     # three run on the live (depth=1) path, so they're the highest-value, most distinct edits:
     # de-clutter, reframe head-on, add brand text. Judge-gated fitness still vetoes un-ad-like edits.
     pool = [
+        f"make SEVERAL coordinated changes at once to turn this into a polished campaign: remove the "
+        f"clutter and any objects, hands, props or stray text crowding or blocking {target}; reframe "
+        f"it head-on and enlarge it as the clear hero; clean and simplify the background; and add a "
+        f"bold, legible on-brand headline, call-to-action and wordmark on {target}",
         f"remove or clean away any objects, hands, props or background obstructions that crowd or "
         f"block {target} so the product is fully visible, unobstructed, and the clear hero of the shot",
         f"reframe {target} to a clean, head-on, front-facing hero angle — square it to the camera so "
