@@ -31,12 +31,18 @@ def _genai():
     return _client
 
 
-# Focus-oriented edit template: we WANT to restyle the background to redirect attention,
-# but the brand element must stay put + dimensions fixed (so before/after scoring is fair).
+# Focus-oriented edit template. We optimize attention onto the brand, so the editor MAY make
+# real content changes — enlarge/brighten the logo, add a bold CTA, remove clutter — not just
+# dim the background. Only constraint: keep the brand element roughly where it is and keep the
+# overall aspect ratio (so the before/after attention score stays comparable).
 _EDIT_TMPL = (
-    "Edit this ad so the brand's product/logo becomes the clear focal point: {directive}. "
-    "Keep the product and logo in their original position and size; do NOT crop or change the "
-    "aspect ratio. You may freely restyle the background and surrounding elements to achieve this."
+    "You are a senior art director optimizing this ad so the brand's logo / product / "
+    "call-to-action is the first thing the eye lands on. Apply this change: {directive}. "
+    "You MAY enlarge, brighten and sharpen the brand logo and product, add a clear bold "
+    "on-brand call-to-action or wordmark, and remove or simplify clutter and competing "
+    "elements. Keep the brand element roughly centered where it already sits (do not move it "
+    "to a different part of the frame) and do NOT crop or change the overall aspect ratio. "
+    "Return one polished, realistic, on-brand ad."
 )
 
 
