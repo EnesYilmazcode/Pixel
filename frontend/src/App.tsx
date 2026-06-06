@@ -9,6 +9,16 @@ import ActivityLog from "./ActivityLog";
 // UserButton must live inside a ClerkProvider; main.tsx only mounts one when a key exists.
 const HAS_CLERK = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
+// Download a data-URL image (the finalized optimized creative).
+function downloadImage(dataUrl: string, name: string) {
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = `${(name || "pixel").toLowerCase().replace(/\s+/g, "-")}-optimized.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 // Control state for the incremental "one branch at a time" optimizer.
 type StepCtl = {
   step: number;          // next branch index (also the directive to try)
@@ -231,6 +241,9 @@ export default function App() {
             </span>
             <button onClick={analyze} disabled={!file || !!busy}>Analyze</button>
             <button onClick={optimize} disabled={!file || !!busy} className="primary">Optimize ✦</button>
+            {agents?.variant_png && (
+              <button onClick={() => downloadImage(agents.variant_png, active?.id ?? brand)}>↓ Download</button>
+            )}
             {busy && <span className="busy">{busy}<span className="dots" /></span>}
             <span className="spacer" />
             <button className="ghost" onClick={reset}>← Gallery</button>
