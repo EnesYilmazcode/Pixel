@@ -18,32 +18,27 @@
 `detect target → baseline gaze (score + heatmap) → Insider brief → Scout tactics → Director composes ONE directive (kill top distractor + apply top tactic) → Retoucher edits via Gemini → re-score → return before/after + iterations[] + rationale.`
 
 ## Chunks / to-do
-### ✅ Chunk 1 — Skeleton + contract (DONE)
-- [x] `config.py`, `schemas.py`, `requirements.txt`, CORS, `/health`.
-- [x] `main.py` wires `/predict` `/edit` `/agents` to real modules.
+### ✅ DONE & verified on real ads
+- [x] Skeleton + contract: `config.py`, `schemas.py`, CORS, `/health`, `main.py` routes.
+- [x] **Real DeepGaze IIE** (GPU) → heatmap + attention score + distractors + scanpath (+ Gaussian/MIT1003 centerbias, downscale-for-speed). Demo-safe fallback if torch absent.
+- [x] **Real Gemini** edit/detect/judge — **hardened** against empty/blocked responses (no crash on branded ads).
+- [x] **Named distractors** via Gemini vision ("woman's face" not "upper-left region").
+- [x] **Insider** (real brand brief) + **Scout** (real Pinecone RAG, 11 ads seeded). `/agents` 500 (list-tone) **fixed**.
+- [x] **Branch tree-search** (`branch.py`): branches die/grow, never regresses; parallel edits. Live = depth-1 flat; deep = precompute.
+- [x] **Parallel** intake + edits → live `/agents` ~25-30s.
+- [x] **Campaign save/resume**: `storage.py` + `/campaigns` CRUD + `/campaigns/{id}/optimize`.
 
-### ✅ Chunk 2 — Vision spine w/ fallback (DONE, fallback active)
-- [x] `deepgaze_runner.predict`: density → heatmap data URL + attention score + distractors + scanpath.
-- [x] Dimension-fix helpers in place.
-- [ ] **Activate real DeepGaze IIE**: `pip install torch (cpu) + git+DeepGaze`, download MIT1003 centerbias, replace the `_density` fallback branch. Verify output dims handled.
+### 🔴 NOW — make the lift actually compelling (the money shot is weak)
+Real-ad test: red-bull 10→11%, spotify 11→11%, apple 53→54% — only **+1 pt**. Edits aren't moving DeepGaze attention enough.
+- [ ] Stronger, target-aware directives (e.g. "dim everything except the logo region to 50%", explicit reframing) — edits DeepGaze visibly responds to.
+- [ ] Score against a **tight** target box (logo), not a broad region, so there's headroom + a bigger relative lift.
+- [ ] Use deep branching (depth 3) to **precompute** a hero run with a real lift → cache as the demo showcase.
+- [ ] Pick the 1-2 sample ads with the best baseline→lift story; record them.
+
+### ⬜ Next
+- [ ] LangSmith tracing + `attention_score` chart.
+- [ ] Integrity gate + re-detect target after edit (correctness).
 - [ ] DeepGaze III scanpath (replace greedy-peak proxy). *(stretch)*
-
-### ✅ Chunk 3 — Gemini edit/detect/judge (DONE, no-key fallback)
-- [x] `edit_image` localized template + align + (integrity hook).
-- [ ] **Smoke-test a real edit** once `GEMINI_API_KEY` env loads; confirm output image parses + re-aligns; wire `integrity_ok` reject/redo.
-
-### Chunk 4 — Real brains
-- [ ] `agents.insider`: real Gemini brand brief.
-- [ ] `pinecone_store.py` seed ~20 ads (Gemini analysis → upsert) + `data/competitors/*.md`.
-- [ ] `agents.scout`: real Pinecone RAG → tactics + `scout_brief.md`.
-
-### Chunk 5 — Observability
-- [ ] LangSmith tracing + `attention_score` run feedback (rising-score chart).
-
-### Chunk 6 — Branching (stretch, only if 1-variant loop is solid)
-- [ ] `branch.py`: greedy beam search, dual fitness (0.6 DeepGaze + 0.4 judge), multi-criteria stop.
-- [ ] Emit branch tree in `/agents` for the canvas.
-- [ ] Precompute a hero run as a live-demo fallback.
 
 ## Run
 ```
