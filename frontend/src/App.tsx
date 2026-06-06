@@ -56,26 +56,26 @@ export default function App() {
   async function optimize() {
     if (!file) return;
     setAgents(null);
+    // Cycle the real agent stages as a loader while the live call runs (mock paces faster).
+    const stages = [
+      "Insider · reading the brand brief",
+      "Scout · searching competitor campaigns",
+      "Eye · scoring baseline attention",
+      "Retoucher · generating edits with Nano Banana",
+      "Eye · re-scoring the variants",
+    ];
+    let si = 0; setBusy(stages[0]);
+    const step = USE_MOCK_AGENTS ? 1100 : 8000;
+    const iv = setInterval(() => { si = Math.min(si + 1, stages.length - 1); setBusy(stages[si]); }, step);
     try {
-      // Walk the real agent stages so the result doesn't pop instantly. In mock mode we
-      // pace it (~6s); in live mode the real /agents call provides the wait on its own.
-      if (USE_MOCK_AGENTS) {
-        const stages = [
-          "Insider · reading the brand brief…",
-          "Scout · searching competitor campaigns…",
-          "Eye · scoring baseline attention…",
-          "Retoucher · generating edits with Nano Banana…",
-          "Eye · re-scoring the variants…",
-        ];
-        const result = await runAgents(file, brand);
-        for (const s of stages) { setBusy(s); await new Promise((r) => setTimeout(r, 1050 + Math.random() * 500)); }
-        setAgents(result);
-      } else {
-        setBusy("Agents optimizing… (Nano Banana edits + re-scoring)");
-        setAgents(await runAgents(file, brand));
-      }
-    } catch (e) { alert(String(e)); }
-    finally { setBusy(""); }
+      const result = await runAgents(file, brand);
+      setAgents(enrichTree(result, imgUrl)); // attach the real original + winner images to the tree
+    } catch (e) {
+      alert(String(e));
+    } finally {
+      clearInterval(iv);
+      setBusy("");
+    }
   }
 
   const score = agents?.final_score ?? pred?.attention_score;
@@ -85,7 +85,8 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <span className="brandmark">
+        <span className="brandmark" onClick={reset} role="button" tabIndex={0} title="Home"
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && reset()} style={{ cursor: "pointer" }}>
           <span className="dot" />
           <h1>Pixel</h1>
         </span>
@@ -155,7 +156,7 @@ export default function App() {
             </span>
             <button onClick={analyze} disabled={!file || !!busy}>Analyze</button>
             <button onClick={optimize} disabled={!file || !!busy} className="primary">Optimize ✦</button>
-            {busy && <span className="busy">{busy}</span>}
+            {busy && <span className="busy">{busy}<span className="dots" /></span>}
             <span className="spacer" />
             <button className="ghost" onClick={reset}>← Gallery</button>
           </div>
@@ -194,7 +195,7 @@ export default function App() {
 
               {pred?.distractors?.length ? (
                 <div className="block">
-                  <h3>Attention thieves</h3>
+                  <h3>Competing for attention</h3>
                   {pred.distractors.map((d, i) => (
                     <div className="row" key={i} style={{ display: "block" }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -237,6 +238,20 @@ export default function App() {
       )}
     </div>
   );
+}
+
+// Attach real images to the tree: the root shows the original ad (+before heatmap), the
+// winner shows the edited variant (+after heatmap). Keeps any per-node images the backend
+// already provided. Pruned variants stay imageless — the workspace shows their prompt.
+function enrichTree(res: AgentsResult, originalUrl: string): AgentsResult {
+  if (!res.tree?.length) return res;
+  const best = res.tree.reduce((a, b) => (b.score > a.score ? b : a), res.tree[0]);
+  const tree = res.tree.map((n) => {
+    if (n.parent === null) return { ...n, image: n.image || originalUrl, heatmap: n.heatmap || res.heatmap_before };
+    if (n.id === best.id) return { ...n, image: n.image || res.variant_png, heatmap: n.heatmap || res.heatmap_after };
+    return n;
+  });
+  return { ...res, tree };
 }
 
 // Animated count-up for the hero score (no dependency; rAF easing).
