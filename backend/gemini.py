@@ -47,15 +47,20 @@ def edit_image(image: Image.Image, directive: str) -> tuple[Image.Image, str]:
     if client is None:
         return image, f"[mock] would: {directive}"
 
-    resp = client.models.generate_content(
-        model=settings.gemini_image_model,
-        contents=[_EDIT_TMPL.format(directive=directive), image],
-    )
-    for part in resp.candidates[0].content.parts:
-        if getattr(part, "inline_data", None):
-            variant = Image.open(io.BytesIO(part.inline_data.data)).convert("RGB")
-            return align_to_input(variant, in_w, in_h), directive
-    return image, f"[no image returned] {directive}"
+    try:
+        resp = client.models.generate_content(
+            model=settings.gemini_image_model,
+            contents=[_EDIT_TMPL.format(directive=directive), image],
+        )
+        for cand in (resp.candidates or []):
+            content = getattr(cand, "content", None)
+            for part in (getattr(content, "parts", None) or []):
+                if getattr(part, "inline_data", None):
+                    variant = Image.open(io.BytesIO(part.inline_data.data)).convert("RGB")
+                    return align_to_input(variant, in_w, in_h), directive
+        return image, f"[no edit returned] {directive}"  # blocked/empty -> branch just won't improve
+    except Exception:
+        return image, f"[edit failed] {directive}"
 
 
 def detect_target(image: Image.Image, what: str = "primary logo or CTA") -> list[float]:
