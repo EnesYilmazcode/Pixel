@@ -94,7 +94,8 @@ def _stepwise_order(pool: list[str]) -> list[str]:
 
 @app.post("/optimize/step")
 async def optimize_step(image: UploadFile = File(...), brand: str = Form("the brand"),
-                        target: str | None = Form(None), step: int = Form(0)) -> dict:
+                        target: str | None = Form(None), step: int = Form(0),
+                        hint: str = Form("")) -> dict:
     """One branch at a time. `image` is the CURRENT best creative (the original on step 0);
     the frontend re-sends the adopted winner each step. We run a single Nano Banana edit
     (next directive in the pool), re-score with DeepGaze, and Judge it. The frontend shows
@@ -110,6 +111,8 @@ async def optimize_step(image: UploadFile = File(...), brand: str = Form("the br
     # before the riskier structural ones (remove/reframe/recolor) that can regress.
     pool = _stepwise_order(agents._directive_pool(before, {}, brand))
     directive = pool[step % len(pool)]
+    if hint.strip():  # the user's own suggestion, applied on top of the auto edit
+        directive = f"{directive}. Also apply the user's request: {hint.strip()}"
     variant, desc = gemini.edit_image(img, directive)
     new_score = dg.score_only(variant, tbox)
     quality, reason = gemini.judge(variant, brand)

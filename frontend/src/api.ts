@@ -82,13 +82,14 @@ export type StepResult = {
 };
 
 export async function optimizeStep(
-  image: File, brand: string, step: number, target?: Box,
+  image: File, brand: string, step: number, target?: Box, hint?: string,
 ): Promise<StepResult> {
   const fd = new FormData();
   fd.append("image", image);            // the current best creative (original on step 0)
   fd.append("brand", brand);
   fd.append("step", String(step));
   if (target) fd.append("target", JSON.stringify(target));
+  if (hint && hint.trim()) fd.append("hint", hint.trim()); // optional user suggestion to Nano Banana
   const r = await fetch("/optimize/step", { method: "POST", body: fd });
   if (!r.ok) throw new Error(`/optimize/step ${r.status}`);
   return r.json();

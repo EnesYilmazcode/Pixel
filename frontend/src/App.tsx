@@ -50,6 +50,7 @@ export default function App() {
   const [busy, setBusy] = useState<string>("");
   // Incremental "one branch at a time" optimizer control (null = not optimizing).
   const [stepCtl, setStepCtl] = useState<StepCtl | null>(null);
+  const [hint, setHint] = useState(""); // optional user suggestion fed to Nano Banana
 
   function reset() {
     setFile(null); setImgUrl(""); setActive(null); setPred(null); setAgents(null); setStepCtl(null);
@@ -122,7 +123,7 @@ export default function App() {
     setBusy(`Retoucher · branch ${ctl.step + 1} with Nano Banana…`);
     try {
       const src = ctl.step === 0 ? file : await dataUrlToFile(ctl.bestImgUrl, "best.png");
-      const res = await optimizeStep(src, brand, ctl.step, active?.target_box);
+      const res = await optimizeStep(src, brand, ctl.step, active?.target_box, hint);
       // Every branch adopts its edit and raises attention on target — each spawn climbs
       // the score (by ~6-11 pts, capped) and shows that branch's real Nano Banana edit.
       const newScore = Math.min(0.97, Math.max(res.new_score, ctl.bestScore + 0.06 + Math.random() * 0.05));
@@ -238,6 +239,11 @@ export default function App() {
             <span className="field">
               <label>Brand</label>
               <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Brand" />
+            </span>
+            <span className="field">
+              <label>Suggestion (optional)</label>
+              <input type="text" value={hint} onChange={(e) => setHint(e.target.value)}
+                placeholder="tell Nano Banana what to change…" />
             </span>
             <button onClick={analyze} disabled={!file || !!busy}>Analyze</button>
             <button onClick={optimize} disabled={!file || !!busy} className="primary">Optimize ✦</button>
