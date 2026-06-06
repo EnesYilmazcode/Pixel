@@ -11,6 +11,9 @@ export default defineConfig({
       "/predict": API,
       "/edit": API,
       "/agents": API,
+      "/optimize": API,
+      "/campaigns": API,
+      "/health": API,
     },
   },
 });
