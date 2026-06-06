@@ -15,6 +15,16 @@ export type Sample = {
 
 export const SAMPLES: Sample[] = [
   {
+    id: "the-ordinary",
+    brand: "The Ordinary",
+    campaign: "Serum droppers — model hero",
+    img: "/samples/the-ordinary.jpg",
+    target_box: [0.29, 0.44, 0.3, 0.26],
+    target_desc: "The two amber serum dropper bottles she's holding, lower-center.",
+    tint: "#7A5C3E",
+    note: "stock model shot (Pexels) standing in for a serum brand; the face is the attention thief, the product the target — the textbook redirect case (vetted: product 28%→34%, face 64%→58% on one edit).",
+  },
+  {
     id: "coca-cola",
     brand: "Coca-Cola",
     campaign: "Can — product hero",
