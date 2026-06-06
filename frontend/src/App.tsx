@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { UserButton } from "@clerk/react";
-import { predict, runAgents, USE_MOCK_PREDICT, MODE_LABEL, type PredictResult, type AgentsResult, type Fixation, type TreeNode } from "./api";
+import { predict, runAgents, USE_MOCK_PREDICT, type PredictResult, type AgentsResult, type Fixation, type TreeNode } from "./api";
 import { SAMPLES, type Sample } from "./samples";
+import HeroBranches from "./HeroBranches";
 
 // UserButton must live inside a ClerkProvider; main.tsx only mounts one when a key exists.
 const HAS_CLERK = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -69,21 +70,23 @@ export default function App() {
           <span className="dot" />
           <h1>Pixel</h1>
         </span>
-        <span className="tag">see where attention goes · fix it · prove the lift</span>
-        <span className="mock">{MODE_LABEL}</span>
+        <span className="spacer" />
         {HAS_CLERK && <span className="auth"><UserButton /></span>}
       </header>
 
       {!imgUrl ? (
         <>
           <section className="hero">
-            <p className="eyebrow">Gaze-driven campaign optimizer</p>
-            <h2>See where eyes go. <em>Move them</em> to your brand.</h2>
-            <p>
-              Pick a campaign below and Pixel predicts where human attention lands,
-              names the thieves stealing it, then lets a team of agents redirect it —
-              proving the lift with a before&nbsp;→&nbsp;after attention score.
-            </p>
+            <div className="hero-copy">
+              <p className="eyebrow">Gaze-driven campaign optimizer</p>
+              <h2>See where eyes go. <em>Move them</em> to your brand.</h2>
+              <p>
+                Pick a campaign and Pixel predicts where attention lands, names the thieves
+                stealing it, then a team of agents redirects it, proving the lift with a
+                before / after attention score.
+              </p>
+            </div>
+            <HeroBranches />
           </section>
 
           <div className="gallery-head">
