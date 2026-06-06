@@ -1,57 +1,53 @@
 import { useEffect, useState } from "react";
 
-// Looping landing illustration of the optimize loop: an ad splits into variant edits,
-// weak branches die, strong ones survive and grow, until a best emerges — then it loops.
-// Decorative (synthetic scores) — it shows HOW Pixel works, not a specific run.
-const BASE = 28;
-const ROUNDS: { score: number; keep: boolean }[][] = [
-  [{ score: 41, keep: true }, { score: 33, keep: false }, { score: 37, keep: false }],
-  [{ score: 54, keep: true }, { score: 47, keep: false }, { score: 44, keep: false }],
-  [{ score: 67, keep: true }, { score: 58, keep: false }, { score: 61, keep: false }],
+// Skeleton-loader-style illustration of the search: one box splits into branches,
+// weak ones gray out, a path survives and splits again, until a winner is highlighted.
+// No numbers or labels — just the gist. Loops.
+type Node = { id: string; x: number; y: number; parent?: string; appear: number; die?: number; win?: boolean };
+
+const NODES: Node[] = [
+  { id: "r", x: 50, y: 11, appear: 0 },
+  { id: "a", x: 19, y: 46, parent: "r", appear: 1, die: 2 },
+  { id: "b", x: 50, y: 46, parent: "r", appear: 1 },
+  { id: "c", x: 81, y: 46, parent: "r", appear: 1, die: 2 },
+  { id: "d", x: 35, y: 84, parent: "b", appear: 2, die: 3 },
+  { id: "w", x: 66, y: 84, parent: "b", appear: 3, win: true },
 ];
-const STEPS = 1 + ROUNDS.length * 2 + 1; // root, then per round (spawn, prune), then hold
 
 export default function HeroBranches() {
   const [step, setStep] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setStep((s) => (s + 1) % (STEPS + 1)), 950);
+    const id = setInterval(() => setStep((s) => (s + 1) % 6), 820); // ...3=winner, 4-5=hold, loop
     return () => clearInterval(id);
   }, []);
 
+  const find = (id?: string) => NODES.find((n) => n.id === id);
+  const stateOf = (n: Node) =>
+    step < n.appear ? "hidden"
+    : n.die != null && step >= n.die ? "dead"
+    : n.win ? "win"
+    : "alive";
+
   return (
     <div className="hb" aria-hidden="true">
-      <div className="hb-flow">
-        {/* the original ad */}
-        <div className="hb-col">
-          <div className="hb-cap">your ad</div>
-          <div className={`hb-tile root ${step >= 0 ? "in working" : ""}`}>
-            <span className="hb-pct">{BASE}%</span>
-            <span className="hb-tag">attention</span>
-          </div>
-        </div>
-
-        {ROUNDS.map((variants, r) => {
-          const spawned = step >= 1 + r * 2;
-          const pruned = step >= 2 + r * 2;
+      <svg className="hb-edges" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {NODES.filter((n) => n.parent).map((n) => {
+          const p = find(n.parent)!;
+          const st = stateOf(n);
           return (
-            <div className="hb-col" key={r}>
-              <div className={`hb-cap ${spawned ? "in" : ""}`}>round {r + 1}</div>
-              {variants.map((v, i) => {
-                const state = !spawned ? "hidden" : !pruned ? "working" : v.keep ? "best" : "dead";
-                return (
-                  <div className={`hb-tile in ${state}`} key={i} style={{ transitionDelay: `${i * 70}ms` }}>
-                    <span className="hb-pct">{v.score}%</span>
-                    <span className="hb-tag">{!pruned ? "testing" : v.keep ? "kept" : "pruned"}</span>
-                  </div>
-                );
-              })}
-            </div>
+            <line
+              key={n.id}
+              x1={p.x} y1={p.y + 6} x2={n.x} y2={n.y - 6}
+              className={`hb-edge ${st === "hidden" ? "off" : st === "dead" ? "dead" : ""}`}
+            />
           );
         })}
-      </div>
-      <div className="hb-foot">
-        <span className="hb-dot" /> agents redirect attention, branch by branch
-      </div>
+      </svg>
+      {NODES.map((n) => (
+        <div key={n.id} className={`hb-node ${stateOf(n)}`} style={{ left: `${n.x}%`, top: `${n.y}%` }}>
+          <i /><i />
+        </div>
+      ))}
     </div>
   );
 }
