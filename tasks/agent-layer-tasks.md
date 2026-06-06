@@ -54,6 +54,11 @@ Yes, your plan (4–5 branches, score each, recurse, stop at a threshold) is goo
 
 ---
 
+## Coordination note — `/agents` stage latency: parallelize the N edits (C → B)
+C profiled the wired `agents.run` (flat best-of-N, `breadth=3`). One `/agents` call is **~30–60s on stage**, dominated by **3 *sequential* `gemini.edit_image` calls** (image-gen ~5–12s each), plus 5 DeepGaze CPU passes (~2–5s each). The edits are a plain `for` loop over `_propose_directives` and are **independent** — running them **concurrently** (`asyncio.gather` over a thread pool, since the genai call is blocking) collapses image-gen from 3× → ~1×, cutting the call to **~15–25s**. This is the single highest-leverage change for live demo time. Also keep `branch.py` **off the live path** (depth 3 × breadth 3 ≈ 9+ edits ≈ 2–5 min) — pre-record that as the showcase, per Phase 3's "precompute a hero run as fallback." `agents.py` is B's file, so **flagging, not editing** — your call.
+
+---
+
 ## Task breakdown (small, sequenced, non-interfering — check off as you go)
 
 ### Phase 1 — Single-variant loop (do first)
