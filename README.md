@@ -50,10 +50,10 @@ A **Director** orchestrates five specialists, composed as a LangChain pipeline. 
 - **Campaign save and resume.** Persist a campaign and its runs.
 
 ## Tech stack
-- **Backend:** Python + FastAPI — `/predict`, `/edit`, `/agents`, `/optimize/step`, `/campaigns`, `/health`.
-- **Frontend:** Vite + React + TypeScript, custom components (light "optical instrument" theme).
-- **Models:** DeepGaze IIE (PyTorch, GPU) · Gemini 2.5 Flash Image + Gemini text.
-- **Memory / orchestration / auth:** Pinecone · LangChain (+ LangSmith) · Clerk.
+- **Backend:** Python and FastAPI. Routes: `/predict`, `/edit`, `/agents`, `/optimize/step`, `/campaigns`, `/health`.
+- **Frontend:** Vite, React, and TypeScript with custom components (light "optical instrument" theme).
+- **Models:** DeepGaze IIE (PyTorch, GPU), Gemini 2.5 Flash Image, and Gemini text.
+- **Memory, orchestration, auth:** Pinecone, LangChain (with LangSmith), and Clerk.
 
 ## Repo layout
 ```
