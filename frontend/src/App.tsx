@@ -255,6 +255,7 @@ export default function App() {
                     src={s.img}
                     alt={`${s.brand} — ${s.campaign}`}
                     loading="lazy"
+                    decoding="async"
                     onLoad={(e) => ((e.currentTarget.previousElementSibling as HTMLElement).style.display = "none")}
                   />
                   <span className="go">Analyze</span>
