@@ -7,7 +7,7 @@ Built in one day for Multimodal Hacks: Build the Interface for Agents (#NYTechWe
 ---
 
 ## The problem
-Brands spend millions on creative but can't see where attention actually goes until after launch. Pixel makes attention **visible and actionable** — before a dollar is spent on media.
+Brands spend millions on creative but can't see where attention goes until after launch. Pixel shows where attention lands and suggests fixes before any money goes to media.
 
 ## How it works
 1. **Pick a campaign** — choose a sample ad or upload your own.
