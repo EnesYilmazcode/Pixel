@@ -1,11 +1,8 @@
-# Pixel — Agentic Campaign Optimization
+# Pixel
 
-> **See where your audience looks. Let a team of agents fix it. Prove the lift.**
+Pixel predicts where people look in an ad, then uses AI agents to redesign it so attention lands on the brand. It re-scores every edit with a before and after attention metric, so the change is measured rather than guessed.
 
-Pixel takes a brand's ad creative, predicts where human eyes actually land using a trained gaze model, then runs a fleet of AI agents — informed by live competitor analysis — that redesign the image so attention flows to the brand (logo / product / CTA). Every edit is re-scored with an **objective before/after attention metric**, so the improvement is measured, not guessed.
-
-Built in one day for **Multimodal Hacks: Build the Interface for Agents** (#NYTechWeek, June 6 2026).
-**Primary track:** Best Multi-Agent Interface.
+Built in one day for Multimodal Hacks: Build the Interface for Agents (#NYTechWeek, June 6 2026). Track: Best Multi-Agent Interface.
 
 ---
 
