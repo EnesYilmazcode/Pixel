@@ -287,7 +287,8 @@ export default function App() {
                 placeholder="tell Nano Banana what to change…" autoComplete="off" spellCheck={false} />
             </span>
             <button onClick={analyze} disabled={!file || !!busy}>Analyze</button>
-            <button onClick={optimize} disabled={!file || !!busy} className="primary">Optimize ✦</button>
+            <button onClick={optimize} disabled={!file || !!busy} className="primary"
+              title="Run the agent fleet: edit the ad, re-score attention, and grow the branch tree">Optimize ✦</button>
             {agents?.variant_png && (
               <button onClick={() => downloadImage(agents.variant_png, active?.id ?? brand)}>↓ Download</button>
             )}
