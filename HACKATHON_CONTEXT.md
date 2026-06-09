@@ -134,7 +134,7 @@ The official models live at **github.com/matthias-k/DeepGaze** (PyTorch, pretrai
 | **Inference (IIE)** | `model = deepgaze_pytorch.DeepGazeIIE(pretrained=True).to(DEVICE)`<br>`log_density = model(image_tensor, centerbias_tensor)` |
 
 **Decision:** Use **BOTH**.
-- **DeepGaze IIE (heatmap) = optimization objective** (the score agents optimize against: attention-on-target %, attention spread/entropy).
+- **DeepGaze IIE (heatmap) = optimization objective** (the score agents optimize against: a size-invariant attention-on-target *prominence index* — 50 = average salience for the region's size, not a raw % — plus attention spread/entropy).
 - **DeepGaze III (scanpath) = hero visualization** (numbered gaze-path nodes + arrows overlaid on image).
 
 **Sources:**
@@ -206,7 +206,7 @@ Question raised: instead of uploading a pre-existing ad, type text → an agent 
 
 | Mode | Flow | Role |
 |---|---|---|
-| **A — the proof** (de-risked core) | Upload a **real brand ad** → optimize → score goes up | Credibility. Baseline is a real agency-shipped ad, so the lift is unimpeachable. |
+| **A — the proof** (de-risked core) | Upload a **real brand ad** → optimize → show the honest before/after (the size-invariant prominence index; the optimizer keeps the best variant and reports the real delta, even when flat/negative) | Credibility. Baseline is a real agency-shipped ad, so a real lift is unimpeachable — and an honest non-lift is still credible. |
 | **B — the wow** (optional front door) | Type company name → research agent (+ Pinecone RAG) → generate ad → hand off to the **same** gaze loop | Hook + richer multi-agent story (research → brief → generate → optimize). **Pre-cache ≥1 company** so a live failure can't sink the demo. |
 
 **Key risk with text-in:** if the agent generates the "before," we're optimizing our own strawman — a judge can ask "did attention rise because the editor is good, or because v1 was deliberately weak?" Uploading a real ad removes that doubt. The score lift is *objectively real* either way (DeepGaze is source-agnostic), but the real-ad baseline is more persuasive.

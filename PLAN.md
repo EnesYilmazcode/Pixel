@@ -56,7 +56,7 @@
 **Don't split by tier (frontend vs backend).** That's the trap — the FE person mocks for hours and integration happens late and painfully. We DO have two runtimes (Python for DeepGaze — no JS port; React for the node canvas), but that's a *technical* boundary, not how we assign people.
 
 **Phase 1 — Build the spine TOGETHER (now → ~1:00). One vertical, integrated early.**
-The only thing that must work: **upload real ad → DeepGaze heatmap + score → one Gemini edit → re-score → number goes up**, with a dead-simple UI (image + heatmap overlay + the score).
+The only thing that must work: **upload real ad → DeepGaze heatmap + score → one Gemini edit → re-score → show the real before/after** (the score is a size-invariant prominence index, and the delta is whatever actually happened — we keep the best variant and report it honestly, including a flat/negative result), with a dead-simple UI (image + heatmap overlay + the score).
 - One person drives the **Python** side (DeepGaze runner + `/predict` + `/edit`, with the dimension-fix from the Critical Risk section baked in).
 - Other drives the **React shell** (upload, show image, fetch + render heatmap, show score) AND wires it to the real endpoints *as they come up* — tight loop, integrate continuously, not at a checkpoint.
 - Goal: by ~1:00 the money shot works end-to-end on ONE hero ad. Pair on it; this is the demo.
@@ -96,7 +96,7 @@ The only thing that must work: **upload real ad → DeepGaze heatmap + score →
 Agents are **React Flow nodes that light up as they run** — the pipeline IS the interface, not a hidden backend.
 - **Fan-out (parallel):** **Insider** + **Scout** + **Eye (baseline)** fire at once → three nodes pulse simultaneously. Visible parallelism reads as "a team," not a script.
 - **Converge:** edges flow into **Director**, which emits its one-line `edit_directive` as node text — *reasoning made visible*.
-- **Act:** **Retoucher** runs → new image + score animate in; the **before/after number ticks up** (the money shot).
+- **Act:** **Retoucher** runs → new image + the **real before/after score** animate in (the money shot). The optimizer keeps the best variant it finds and reports the honest delta — failed branches stay visible rather than being hidden behind an always-climbing number.
 - **Loop:** Director→Retoucher→Eye loops up to `MAX=3`; each pass adds a node so the graph visibly grows.
 - **Branch + Judge (stretch):** Director fans 2–3 **Retoucher** variants → **Judge** compares → winning edge highlights.
 - **Node states:** grey → pulsing → green, so a judge *sees* the fleet working without reading logs.
@@ -149,7 +149,7 @@ Agents are **React Flow nodes that light up as they run** — the pipeline IS th
     "winning_image_path": "/out/variant_1.png" }
 }
 ```
-`target_attention_score` ∈ [0,1] = fraction of predicted fixation mass inside `target_region`. **The single number every agent optimizes and the demo headlines.**
+`target_attention_score` ∈ [0,1] is a **size-invariant prominence index** (NOT a raw fraction): `ratio = (fixation mass inside target_region) / (region's area fraction)`, then `score = ratio/(ratio+1)`, so **0.5 = average salience for the region's size**, >0.5 = it out-pulls its size. This is the honest headline — raw mass-in-box would reward simply enlarging the target. The raw mass is still kept as `target_salience` (used by the reward-hack guard to catch "win by suppression"). **The single number every agent optimizes and the demo headlines.**
 
 ---
 
@@ -248,7 +248,7 @@ pixel/
 
 **Required handling (build this into `deepgaze_runner.py` + `gemini.py` from the start):**
 1. **Record input `(W,H)`; resample every edited output back to exactly `(W,H)`** (`PIL .resize((W,H), LANCZOS)`) before scoring. If aspect ratio changed, **letterbox/pad to input AR then resize** (don't stretch — distortion perturbs saliency). Log raw output dims to detect AR changes.
-2. **Never hard-code a pixel box — use normalized coords** `[x/W, y/H, w/W, h/H]` so the target survives resizing. Score = fraction of total saliency mass inside the box (resolution-invariant).
+2. **Never hard-code a pixel box — use normalized coords** `[x/W, y/H, w/W, h/H]` so the target survives resizing. The headline score is the size-invariant *prominence* (mass-in-box ÷ box area fraction, squashed to 0–1), not raw mass — both resolution- and size-invariant, so it can't be won by enlarging the target.
 3. **Re-detect the target after each edit** (Gemini/vision call returning a bbox, or template match) rather than trusting the original box — guards against drift. Report BOTH the original-box score and the re-detected-box score; agreement = trustworthy, divergence = flag.
 4. **Integrity gate:** reject/redo an edit if output AR differs from input beyond tolerance, or if the target detector can't relocate the logo/CTA (means the edit garbled it). Stops a degenerate edit faking a "win."
 5. **Prompt for localized edits** (Google's official template): *"Using the provided image, change only the [element] to [X]. Keep everything else exactly the same — preserve composition, framing, lighting, and the position/size of the logo and CTA. Do not change the aspect ratio or crop."* One focused change per call.
