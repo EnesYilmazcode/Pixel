@@ -298,7 +298,7 @@ export default function App() {
           </div>
 
           <div className="stage">
-            <div className="canvas">
+            <div className="canvas" aria-busy={!!busy}>
               <div className="frame">
                 <img className="base" src={agents?.variant_png || imgUrl} alt="campaign" />
                 {agents?.heatmap_after ? (
