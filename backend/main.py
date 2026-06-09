@@ -15,6 +15,7 @@ from PIL import Image
 
 import agents
 import deepgaze_runner as dg
+import eval_guard
 import gemini
 import storage
 
@@ -49,7 +50,19 @@ def _data_url_to_image(data_url: str) -> Image.Image:
 
 @app.get("/health")
 def health() -> dict:
-    return {"ok": True, "gemini": gemini.settings.has_gemini, "pinecone": gemini.settings.has_pinecone}
+    """Honest capability report — drives the LIVE/DEMO mode badge. `deepgaze_loaded`
+    is True only when the REAL model produced the last prediction; otherwise the server
+    is running on the edge+center fallback and says so (it never poses as live)."""
+    loaded = dg.model_loaded()
+    return {
+        "ok": True,
+        "mode": "live" if loaded else "degraded",
+        "deepgaze_loaded": loaded,
+        "engine": dg.engine_name(),       # "deepgaze-iie" | "edge+center fallback" | "uninitialized"
+        "device": dg.device_name(),       # "cpu" | "cuda" | None
+        "gemini": gemini.settings.has_gemini,
+        "pinecone": gemini.settings.has_pinecone,
+    }
 
 
 @app.post("/predict")
@@ -105,18 +118,32 @@ async def optimize_step(image: UploadFile = File(...), brand: str = Form("the br
     before = dg.predict(img, box)
     tbox = box or before["target_box"]
     current = before["attention_score"]
+    abs_before = before["target_salience"]
 
-    # One branch at a time, so ORDER matters (the parallel search hid bad directives by
-    # keeping the best of N). Lead with "amplify the brand" edits — reliably raise attention —
-    # before the riskier structural ones (remove/reframe/recolor) that can regress.
+    # One branch at a time, so ORDER matters. Lead with stronger edits before the riskier
+    # structural ones (remove/reframe/recolor) that can regress. The score is size-invariant
+    # prominence, so a strong edit no longer trivially wins — the real delta can go negative
+    # and is reported as such.
     pool = _stepwise_order(agents._directive_pool(before, {}, brand))
     directive = pool[step % len(pool)]
     if hint.strip():  # the user's own suggestion, applied on top of the auto edit
         directive = f"{directive}. Also apply the user's request: {hint.strip()}"
     variant, desc = gemini.edit_image(img, directive)
-    new_score = dg.score_only(variant, tbox)
+    really_edited = not str(desc).startswith("[")
+    # Both axes in one pass: size-invariant prominence + absolute on-target salience.
+    new_score, abs_after = dg.score_components(variant, tbox)
     quality, reason = gemini.judge(variant, brand)
     vetoed = quality < gemini.settings.judge_gate
+
+    # Reward-hack guard: a perceptible, localized edit whose ABSOLUTE on-target salience
+    # rose — not a suppression cheat (share up, target salience flat) or an invisible tweak.
+    guard = eval_guard.verdict(
+        img, variant,
+        ratio_before=current, ratio_after=new_score,
+        target_sal_before=abs_before, target_sal_after=abs_after,
+        edit_is_semantic=really_edited,
+    )
+    accepted = guard["decision"] == "accept"
     return {
         "step": step,
         "directive": desc,
@@ -124,10 +151,16 @@ async def optimize_step(image: UploadFile = File(...), brand: str = Form("the br
         "current_score": round(current, 4),
         "new_score": round(new_score, 4),
         "delta": round(new_score - current, 4),
+        "target_salience_before": round(abs_before, 4),
+        "target_salience_after": round(abs_after, 4),
         "judge": round(quality, 3),
         "judge_reason": reason,
         "vetoed": vetoed,
-        "improved": bool(new_score > current and not vetoed),
+        "guard": guard["decision"],
+        "guard_reasons": guard["reasons"],
+        # Honest: improved only when the real score rose, the Judge didn't veto it, AND the
+        # guard confirms a real perceptible on-target gain (not suppression / invisible edit).
+        "improved": bool(new_score > current and not vetoed and accepted),
         "n_directives": len(pool),
     }
 

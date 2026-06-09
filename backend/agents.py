@@ -17,6 +17,7 @@ from PIL import Image
 import branch
 import competitive
 import deepgaze_runner as dg
+import eval_guard
 import gemini
 from config import settings
 
@@ -171,6 +172,19 @@ def _step_finalize(state: dict) -> dict:
     n_vetoed = sum(1 for v in judged.values() if v["vetoed"])
     winner = judged.get(id(best_img))
 
+    # Reward-hack guard on the winner: confirm the reported lift is a real, perceptible
+    # on-target gain — not won by suppressing the rest of the frame or an invisible tweak.
+    # Surfaced honestly so a flagged win is shown as flagged, not hidden.
+    guard = None
+    if result["improved"]:
+        guard = eval_guard.verdict(
+            state["image"], best_img,
+            ratio_before=baseline, ratio_after=final,
+            target_sal_before=before.get("target_salience"),
+            target_sal_after=after.get("target_salience"),
+            edit_is_semantic=True,
+        )
+
     steps = [
         {"agent": "Insider", "status": "done", "summary": f"{brand}: {brief.get('tone', '')}"[:90]},
         {"agent": "Scout", "status": "done",
@@ -196,6 +210,7 @@ def _step_finalize(state: dict) -> dict:
                       f"Judge approved that best reduced the {thief} and raised attention on the target."),
         "tree": _serialize_tree(result["tree"]),
         "iterations": steps,
+        "guard": guard,  # reward-hack verdict on the winner (None if no variant beat the original)
     }
     return state
 
@@ -229,9 +244,11 @@ def _build_director():
 def run(image: Image.Image, brand: str = "the brand", target: list | None = None,
         depth: int = 1) -> dict:
     """Optimize an ad. Pass the brand's `target` box (normalized [x,y,w,h]) when known —
-    a curated box gives a meaningful baseline; auto-detection is a noisy fallback.
+    a confirmed box gives a meaningful baseline; auto-detection is a fallback.
     LIVE path uses depth=1; depth>1 runs the full tree-search (precompute the showcase).
-    Never regresses — the original is the floor."""
+    Keeps the best variant explored and reports its REAL delta: if no edit beat the
+    original, the result keeps the original (delta 0) and the failed attempts stay
+    visible in the tree — the reported lift is never fabricated."""
     state = {"image": image, "brand": brand, "target": target, "depth": depth}
     director, is_langchain = _build_director()
     if is_langchain:
