@@ -72,14 +72,35 @@ export type StepResult = {
   directive: string;
   variant_png: string;
   current_score: number;
-  new_score: number;
-  delta: number;
+  new_score: number;          // real size-invariant prominence on the edit (CAN be lower)
+  delta: number;              // new_score - current_score (may be negative)
+  target_salience_before: number; // absolute on-target salience mass before
+  target_salience_after: number;  // ...and after (guard uses these to catch suppression)
   judge: number;
   judge_reason: string;
-  vetoed: boolean;
-  improved: boolean;
+  vetoed: boolean;            // Judge brand-fit below the gate
+  guard: "accept" | "reject" | "review"; // reward-hack verdict
+  guard_reasons: string[];   // why the guard reached that verdict
+  improved: boolean;         // honest: rose AND not vetoed AND guard accepted (real on-target gain)
   n_directives: number;
 };
+
+// Honest capability report driving the LIVE/DEMO badge.
+export type Health = {
+  ok: boolean;
+  mode: string;              // "live" | "degraded"
+  deepgaze_loaded: boolean;  // true only when the REAL model ran
+  engine: string;            // "deepgaze-iie" | "edge+center fallback" | "uninitialized"
+  device: string | null;     // "cpu" | "cuda" | null
+  gemini: boolean;
+  pinecone: boolean;
+};
+
+export async function health(): Promise<Health> {
+  const r = await fetch("/health");
+  if (!r.ok) throw new Error(`/health ${r.status}`);
+  return r.json();
+}
 
 export async function optimizeStep(
   image: File, brand: string, step: number, target?: Box, hint?: string,

@@ -372,6 +372,25 @@ button.ghost:hover:not(:disabled) { color: var(--ink); border-color: transparent
 .delta .vals { font-family: var(--font-mono); font-weight: 600; font-size: 13px; }
 .delta .lift { color: var(--good); font-weight: 700; font-size: 13px; }
 
+/* Honest calibration note under the headline score — what the number actually means. */
+.score .calib {
+  color: var(--faint); font-size: 10.5px; margin-top: 5px;
+  font-family: var(--font-mono); letter-spacing: 0.02em; cursor: help;
+}
+
+/* LIVE / DEMO mode badge — driven by a real /health, never hardcoded. */
+.modebadge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 600 11px var(--font-mono); letter-spacing: 0.04em;
+  padding: 4px 10px; border-radius: 999px; margin-right: 12px;
+  border: 1px solid var(--line-strong); cursor: help;
+}
+.modebadge .md-dot { width: 7px; height: 7px; border-radius: 50%; }
+.modebadge.live { color: var(--good); background: var(--good-wash); border-color: #bfe7d6; }
+.modebadge.live .md-dot { background: var(--good); box-shadow: 0 0 0 3px rgba(14,159,110,0.15); }
+.modebadge.demo { color: var(--accent-ink); background: var(--accent-wash); border-color: #f3cabb; }
+.modebadge.demo .md-dot { background: var(--accent); box-shadow: 0 0 0 3px rgba(238,61,35,0.12); }
+
 .block {
   background: var(--panel); border: 1px solid var(--line);
   border-radius: var(--r-lg); padding: 18px; box-shadow: var(--shadow);

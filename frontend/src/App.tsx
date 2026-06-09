@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { UserButton, SignInButton, Show } from "@clerk/react";
-import { predict, optimizeStep, USE_MOCK_PREDICT, type PredictResult, type AgentsResult, type TreeNode, type Fixation } from "./api";
+import { predict, optimizeStep, health, USE_MOCK_PREDICT, type PredictResult, type AgentsResult, type TreeNode, type Fixation, type Health } from "./api";
 import { SAMPLES, type Sample } from "./samples";
 import HeroBranches from "./HeroBranches";
 import BranchWorkspace from "./BranchWorkspace";
@@ -33,6 +33,7 @@ type StepCtl = {
   lastImproved: boolean; // did the most recent branch beat the current best?
   lastScore: number;     // most recent branch's attention
   lastJudge: number;     // most recent branch's Judge brand-fit
+  lastReason: string;    // why the last branch was kept or rejected (Judge veto / guard flag)
 };
 
 async function dataUrlToFile(url: string, name: string): Promise<File> {
@@ -51,6 +52,10 @@ export default function App() {
   // Incremental "one branch at a time" optimizer control (null = not optimizing).
   const [stepCtl, setStepCtl] = useState<StepCtl | null>(null);
   const [hint, setHint] = useState(""); // optional user suggestion fed to Nano Banana
+  const [hp, setHp] = useState<Health | null>(null); // /health → drives the LIVE/DEMO badge
+
+  // Poll /health once on mount so the badge honestly reflects whether the REAL model loaded.
+  useEffect(() => { health().then(setHp).catch(() => setHp(null)); }, []);
 
   function reset() {
     setFile(null); setImgUrl(""); setActive(null); setPred(null); setAgents(null); setStepCtl(null);
@@ -110,13 +115,16 @@ export default function App() {
     const ctl: StepCtl = {
       step: 0, baseline, bestScore: baseline, bestNodeId: 0, bestImgUrl: imgUrl,
       running: false, awaiting: false, done: false, exhausted: false,
-      lastImproved: false, lastScore: baseline, lastJudge: 0,
+      lastImproved: false, lastScore: baseline, lastJudge: 0, lastReason: "",
     };
     setStepCtl(ctl);
     await runBranch(ctl);
   }
 
   // Grow exactly one branch off the current best, score + judge it, and pause for the user.
+  // HONEST: we show the real DeepGaze score the backend returns — a branch that doesn't beat
+  // the current best (or that the Judge vetoes / the reward-hack guard flags) is kept in the
+  // tree as a failed attempt, NOT adopted, and the headline score does not move for it.
   async function runBranch(ctl: StepCtl) {
     if (!file) return;
     setStepCtl({ ...ctl, running: true, awaiting: false });
@@ -124,29 +132,51 @@ export default function App() {
     try {
       const src = ctl.step === 0 ? file : await dataUrlToFile(ctl.bestImgUrl, "best.png");
       const res = await optimizeStep(src, brand, ctl.step, active?.target_box, hint);
-      // Every branch adopts its edit and raises attention on target — each spawn climbs
-      // the score (by ~6-11 pts, capped) and shows that branch's real Nano Banana edit.
-      const newScore = Math.min(0.97, Math.max(res.new_score, ctl.bestScore + 0.06 + Math.random() * 0.05));
-      const improved = true;
+      const newScore = res.new_score;          // real size-invariant prominence (can be lower)
+      const improved = res.improved;           // real: rose AND not vetoed AND guard accepted
+      const becomesBest = improved && newScore > ctl.bestScore;
       const id = ctl.step + 1; // one node per branch -> ids are deterministic
       const node: TreeNode = {
         id, parent: ctl.bestNodeId, depth: ctl.step + 1, score: newScore,
-        status: "best", directive: res.directive, image: res.variant_png,
+        status: becomesBest ? "best" : "dead", // failed attempts are shown as pruned, not winners
+        directive: res.directive, image: res.variant_png,
       };
+      const reason = res.vetoed
+        ? `Judge vetoed it (brand-fit ${res.judge})`
+        : res.guard && res.guard !== "accept"
+          ? (res.guard_reasons?.[0] ?? `guard: ${res.guard}`)
+          : !improved && newScore <= ctl.bestScore
+            ? `didn't beat ${Math.round(ctl.bestScore * 100)}%`
+            : "";
+      // Only adopt the edit as the new best when it genuinely wins.
+      const nextBestScore = becomesBest ? newScore : ctl.bestScore;
+      const nextBestNodeId = becomesBest ? id : ctl.bestNodeId;
+      const nextBestImgUrl = becomesBest ? res.variant_png : ctl.bestImgUrl;
       setAgents((prev) => {
         if (!prev) return prev;
         let tree = [...(prev.tree ?? []), node];
-        tree = tree.map((n) => (n.id === ctl.bestNodeId ? { ...n, status: "alive" } : n));
+        // when this branch wins, the previous best becomes an interior "alive" node
+        if (becomesBest) {
+          tree = tree.map((n) =>
+            n.id === ctl.bestNodeId && n.status !== "root" ? { ...n, status: "alive" } : n);
+        }
+        const summary = becomesBest
+          ? `✓ kept · ${Math.round(newScore * 100)}% (+${Math.round((newScore - ctl.baseline) * 100)} pts)`
+          : `✕ ${Math.round(newScore * 100)}% — ${reason || "not adopted"}`;
         const iterations = [...prev.iterations, {
-          agent: `Branch ${ctl.step + 1}`, status: "done",
-          summary: `✓ kept · ${Math.round(newScore * 100)}% · ${res.directive.slice(0, 64)}`,
+          agent: `Branch ${ctl.step + 1}`, status: "done", summary: summary.slice(0, 96),
         }];
-        return { ...prev, tree, iterations, variant_png: res.variant_png, final_score: newScore, delta: newScore - ctl.baseline };
+        return {
+          ...prev, tree, iterations,
+          // headline image + score reflect the BEST so far, never a regressing branch
+          variant_png: nextBestNodeId === 0 ? "" : nextBestImgUrl,
+          final_score: nextBestScore, delta: nextBestScore - ctl.baseline,
+        };
       });
       setStepCtl({
         ...ctl, step: ctl.step + 1, running: false, awaiting: true,
-        lastImproved: improved, lastScore: newScore, lastJudge: res.judge,
-        bestScore: newScore, bestNodeId: id, bestImgUrl: res.variant_png,
+        lastImproved: becomesBest, lastScore: newScore, lastJudge: res.judge, lastReason: reason,
+        bestScore: nextBestScore, bestNodeId: nextBestNodeId, bestImgUrl: nextBestImgUrl,
         exhausted: ctl.step + 1 >= res.n_directives,
       });
     } catch (e) {
@@ -170,6 +200,15 @@ export default function App() {
           <h1>Pixel</h1>
         </span>
         <span className="spacer" />
+        {hp && (
+          <span
+            className={`modebadge ${hp.deepgaze_loaded ? "live" : "demo"}`}
+            title={`engine: ${hp.engine}${hp.device ? " · " + hp.device : ""} · gemini ${hp.gemini ? "on" : "off"}`}
+          >
+            <span className="md-dot" />
+            {hp.deepgaze_loaded ? "LIVE · DeepGaze" : "DEMO · fallback"}
+          </span>
+        )}
         {HAS_CLERK && (
           <span className="auth">
             <Show when="signed-out">
@@ -276,6 +315,9 @@ export default function App() {
                 <div className="score">
                   <div className="num"><Counter value={score * 100} /><span className="pct">%</span></div>
                   <div className="lbl">attention on target</div>
+                  <div className="calib" title="ratio of attention density inside the target box to its area share, mapped to 0–100. Size-invariant: it rewards a region that out-pulls its size, not one that is simply larger.">
+                    size-invariant prominence · 50 = average
+                  </div>
                   {agents && (
                     <div className="delta">
                       <span className="vals">{Math.round(agents.baseline_score * 100)}%</span>
@@ -334,7 +376,7 @@ export default function App() {
                   <span className="bc-msg">
                     {stepCtl.lastImproved
                       ? `✓ Branch ${stepCtl.step} kept — attention now ${Math.round(stepCtl.lastScore * 100)}% (+${Math.round((stepCtl.bestScore - stepCtl.baseline) * 100)} pts total)`
-                      : `✕ Branch ${stepCtl.step} didn't beat current — ${Math.round(stepCtl.lastScore * 100)}%, Judge brand-fit ${stepCtl.lastJudge}`}
+                      : `✕ Branch ${stepCtl.step} not adopted — ${Math.round(stepCtl.lastScore * 100)}%${stepCtl.lastReason ? `, ${stepCtl.lastReason}` : ""}`}
                   </span>
                   <span className="spacer" />
                   {stepCtl.exhausted
