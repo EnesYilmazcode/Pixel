@@ -30,11 +30,13 @@ class Settings:
     embed_dim: int = 768  # must match the Pinecone index dimension
 
     # Retoucher beam-search params (greedy; see tasks/agent-layer-tasks.md).
-    # breadth=5 tries the full strong directive set per round (concurrently) so the best
-    # reliably beats baseline; run() also retries until it improves. Never regresses.
+    # breadth=5 tries the full strong directive set per round (concurrently). The score is
+    # size-invariant prominence (0.5 = average salience for the box's size), so target_score
+    # is "clearly out-pulls its size"; the search keeps the best variant and reports its REAL
+    # delta — a round that fails to beat the original is shown as such, not hidden.
     breadth: int = 5
     max_depth: int = 3
-    target_score: float = 0.40
+    target_score: float = 0.85
     epsilon: float = 0.02
 
     # Scout: live web grounding (Gemini + Google Search). Off via WEB_SEARCH=0.
