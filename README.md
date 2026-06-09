@@ -10,10 +10,10 @@ Built in one day for Multimodal Hacks: Build the Interface for Agents (#NYTechWe
 Brands spend millions on creative but can't see where attention goes until after launch. Pixel shows where attention lands and suggests fixes before any money goes to media.
 
 ## How it works
-1. **Pick a campaign** — choose a sample ad or upload your own.
-2. **Analyze** — DeepGaze predicts visual attention: a saliency **heatmap**, the **attention-on-target score** (a size-invariant *prominence index* — 50 = average salience for the region's size, higher = it out-pulls its size; not a raw % of attention), the **attention thieves** stealing it, and the predicted **gaze path**.
-3. **Optimize** — the agent fleet grows the campaign one branch at a time: each branch is a real Nano Banana edit (de-clutter, reframe, strengthen the logo, add a headline…), re-scored by DeepGaze, gated by a brand-fit Judge, and checked by a reward-hack guard. The optimizer keeps the best variant it finds and reports the **real** before/after — an edit that scores worse or doesn't beat the original stays visible (it isn't hidden), and edits that win by suppressing the rest of the frame or by an imperceptible tweak are rejected by the guard. You watch each branch land and choose whether to spawn another.
-4. **Prove it** — the **before → after attention score** updates live with the honest delta (including when it's flat or negative), and you can **download** the finalized creative.
+1. **Pick a campaign.** Choose a sample ad or upload your own.
+2. **Analyze.** DeepGaze predicts visual attention and returns a saliency heatmap, an attention-on-target score, the regions stealing attention, and the predicted gaze path. The score is a size-invariant prominence index. 50 means average salience for the region's size, and higher means it out-pulls its size. It is not a raw percentage of attention.
+3. **Optimize.** The agents grow the campaign one branch at a time. Each branch is a real Nano Banana edit such as de-clutter, reframe, strengthen the logo, or add a headline. DeepGaze re-scores it, a brand-fit Judge gates it, and a reward-hack guard checks it. The optimizer keeps the best variant and reports the real before and after. An edit that scores worse or fails to beat the original stays visible instead of being hidden. Edits that win by suppressing the rest of the frame, or by a change too small to see, are rejected. You watch each branch land and choose whether to spawn another.
+4. **Prove it.** The before and after score updates live with the real delta, including when it is flat or negative. You can download the finished creative.
 
 ## The agent fleet
 A **Director** orchestrates five specialists (composed as a LangChain pipeline) — this is the "interface for agents":
