@@ -44,6 +44,7 @@ body {
   font-size: 15px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   background-color: var(--bg);
   /* layered atmosphere: faint warm glow + a whisper of grain via gradients */
