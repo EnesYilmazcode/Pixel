@@ -16,16 +16,16 @@ Brands spend millions on creative but can't see where attention goes until after
 4. **Prove it.** The before and after score updates live with the real delta, including when it is flat or negative. You can download the finished creative.
 
 ## The agent fleet
-A **Director** orchestrates five specialists (composed as a LangChain pipeline) — this is the "interface for agents":
+A **Director** orchestrates five specialists, composed as a LangChain pipeline. This is the interface for agents.
 
 | Agent | Role |
 |---|---|
 | **Director** | Orchestrates the pipeline, composes the edit strategy, and keeps the best result. |
-| **Insider** | Builds the brand brief (audience, tone, palette, do's/don'ts) via Gemini. |
-| **Scout** | Pulls real competitor ad tactics from a Pinecone knowledge base (RAG). |
-| **Eye** | Runs DeepGaze — attention heatmap, attention-on-target score, distractors, gaze path. |
+| **Insider** | Builds the brand brief (audience, tone, palette, do's and don'ts) via Gemini. |
+| **Scout** | Pulls competitor ad tactics from a Pinecone knowledge base (RAG). |
+| **Eye** | Runs DeepGaze for the attention heatmap, attention-on-target score, distractors, and gaze path. |
 | **Retoucher** | Applies the edit with Gemini "Nano Banana" image generation. |
-| **Judge** | Gemini brand-fit/quality gate — vetoes off-brand or garish edits so attention can't be won cheaply (a reward-hack guard also rejects suppression/invisible cheats). |
+| **Judge** | Gemini brand-fit gate. It vetoes off-brand or garish edits so attention can't be won cheaply. A reward-hack guard also rejects suppression and invisible cheats. |
 
 ## How we used each technology
 
