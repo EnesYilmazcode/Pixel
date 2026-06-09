@@ -29,15 +29,15 @@ A **Director** orchestrates five specialists, composed as a LangChain pipeline. 
 
 ## How we used each technology
 
-**DeepGaze IIE (Google/Tübingen, PyTorch)** — our objective gaze model and the metric the whole system optimizes. We load the pretrained IIE ensemble once, feed it the image plus a *flat* (content-driven) centerbias, and turn its output into a normalized attention map. The **attention-on-target score** is a **size-invariant prominence index** — attention mass in the brand's region divided by that region's area fraction, squashed to 0–1 (50 = average salience for its size). It's deliberately *not* a raw percentage, so the optimizer can't win by simply enlarging the target. That index is the number we show before and after, and the fitness the optimizer climbs; `/health` reports whether the real model or the CPU fallback produced it, driving a LIVE/DEMO badge.
+**DeepGaze IIE (Google/Tübingen, PyTorch)** is the gaze model and the metric the system optimizes. We load the pretrained IIE ensemble once, feed it the image plus a flat content-driven centerbias, and turn its output into a normalized attention map. The attention-on-target score is a size-invariant prominence index: attention mass in the brand's region divided by that region's area fraction, mapped to 0 to 1, where 50 is average salience for its size. It is not a raw percentage, so the optimizer cannot win by enlarging the target. That index is the number we show before and after, and the value the optimizer climbs. `/health` reports whether the real model or the CPU fallback produced it, which drives the LIVE/DEMO badge.
 
-**Google Gemini (Nano Banana)** — `gemini-2.5-flash-image` does the actual creative edits; Gemini's vision/text models also write the brand brief, name the attention thieves, detect the brand target, and act as the Judge that scores brand-fit.
+**Google Gemini (Nano Banana).** `gemini-2.5-flash-image` makes the creative edits. Gemini's vision and text models also write the brand brief, name the attention thieves, detect the brand target, and act as the Judge that scores brand-fit.
 
-**Pinecone** — a vector knowledge base of competitor ad analyses (embedded with `gemini-embedding-001`). The Scout agent retrieves the most relevant rival tactics for the brand via similarity search and feeds them into the edit strategy.
+**Pinecone** holds a vector knowledge base of competitor ad analyses, embedded with `gemini-embedding-001`. The Scout agent retrieves the most relevant rival tactics by similarity search and feeds them into the edit strategy.
 
-**LangChain** — orchestrates the Director's multi-agent pipeline as an LCEL chain, with LangSmith tracing instrumented for observability.
+**LangChain** runs the Director's pipeline as an LCEL chain, with LangSmith tracing for observability.
 
-**Clerk** — authentication: sign-in and user profile in the app.
+**Clerk** handles sign-in and the user profile.
 
 ## Features
 - **Sample gallery + upload** — analyze a real brand ad in one click, or bring your own.
