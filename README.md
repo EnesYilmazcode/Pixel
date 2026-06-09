@@ -78,4 +78,4 @@ cd frontend
 npm install
 npm run dev        # http://localhost:5173
 ```
-**Keys** (git-ignored): `backend/.env` → `GEMINI_API_KEY`, `PINECONE_API_KEY`, `PINECONE_INDEX`; `frontend/.env.local` → `VITE_CLERK_PUBLISHABLE_KEY`. Seed the competitor knowledge base once with `python backend/pinecone_seed.py`.
+**Keys** (git-ignored). In `backend/.env` set `GEMINI_API_KEY`, `PINECONE_API_KEY`, and `PINECONE_INDEX`. In `frontend/.env.local` set `VITE_CLERK_PUBLISHABLE_KEY`. Seed the competitor knowledge base once with `python backend/pinecone_seed.py`.
