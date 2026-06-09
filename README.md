@@ -40,14 +40,14 @@ A **Director** orchestrates five specialists, composed as a LangChain pipeline. 
 **Clerk** handles sign-in and the user profile.
 
 ## Features
-- **Sample gallery + upload** — analyze a real brand ad in one click, or bring your own.
-- **Attention analysis** — heatmap overlay, the size-invariant attention-on-target prominence index, named "attention thieves," and the gaze path.
-- **Interactive branch optimizer** — grow the optimization one real edit at a time; watch the branch tree build, click any branch to see the exact Nano Banana prompt and its score.
-- **Optional suggestion box** — type your own instruction and the Retoucher folds it into the edit.
-- **Before/after attention score** — the objective, honest proof: the real delta (including when an edit didn't help), with a reward-hack guard rejecting suppression/invisible cheats.
-- **Download** the finalized optimized creative.
-- **Live activity log** — see each agent run (DeepGaze, Scout, Retoucher, Judge…) as it happens.
-- **Campaign save/resume** — persist a campaign and its runs.
+- **Sample gallery and upload.** Analyze a brand ad in one click, or bring your own.
+- **Attention analysis.** Heatmap overlay, the size-invariant attention-on-target prominence index, named "attention thieves," and the gaze path.
+- **Interactive branch optimizer.** Grow the optimization one edit at a time. Watch the branch tree build and click any branch to see the exact Nano Banana prompt and its score.
+- **Suggestion box.** Type your own instruction and the Retoucher folds it into the edit.
+- **Before and after attention score.** The real delta, including when an edit didn't help, with a reward-hack guard that rejects suppression and invisible cheats.
+- **Download** the finished creative.
+- **Live activity log.** See each agent run (DeepGaze, Scout, Retoucher, Judge) as it happens.
+- **Campaign save and resume.** Persist a campaign and its runs.
 
 ## Tech stack
 - **Backend:** Python + FastAPI — `/predict`, `/edit`, `/agents`, `/optimize/step`, `/campaigns`, `/health`.
