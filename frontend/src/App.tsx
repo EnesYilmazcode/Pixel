@@ -278,12 +278,13 @@ export default function App() {
             </label>
             <span className="field">
               <label>Brand</label>
-              <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Brand" />
+              <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Brand"
+                autoComplete="off" autoCapitalize="words" spellCheck={false} />
             </span>
             <span className="field">
               <label>Suggestion (optional)</label>
               <input type="text" value={hint} onChange={(e) => setHint(e.target.value)}
-                placeholder="tell Nano Banana what to change…" />
+                placeholder="tell Nano Banana what to change…" autoComplete="off" spellCheck={false} />
             </span>
             <button onClick={analyze} disabled={!file || !!busy}>Analyze</button>
             <button onClick={optimize} disabled={!file || !!busy} className="primary">Optimize ✦</button>
