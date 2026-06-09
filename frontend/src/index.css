@@ -235,6 +235,7 @@ header h1 {
   transition: border-color .2s, background .2s;
 }
 .filebtn:hover { border-color: var(--accent); background: var(--accent-wash); }
+.filebtn:focus-within { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; }
 .filebtn input { display: none; }
 
 button {
@@ -280,6 +281,7 @@ button.ghost:hover:not(:disabled) { color: var(--ink); border-color: transparent
   background: var(--panel); border: 1px solid var(--line-strong);
   border-radius: var(--r-sm); padding: 0 12px;
 }
+.controls .field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
 .controls .field label {
   font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--faint);
