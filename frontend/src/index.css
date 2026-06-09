@@ -127,6 +127,7 @@ header h1 {
   font-size: clamp(34px, 5vw, 56px);
   line-height: 1.02;
   letter-spacing: -0.025em;
+  text-wrap: balance;
 }
 .hero h2 em { font-style: italic; color: var(--accent); }
 .hero p {
@@ -616,7 +617,7 @@ button.ghost:hover:not(:disabled) { color: var(--ink); border-color: transparent
 
 /* override the playground .hero grid for the landing's centered hero */
 .landing .hero { display: block; max-width: 720px; margin: 0 auto; padding: 64px 0 0; text-align: center; }
-.landing .hero h1 { font: 600 clamp(34px, 5vw, 56px)/1.05 var(--font-display); letter-spacing: -0.02em; margin: 0 0 18px; }
+.landing .hero h1 { font: 600 clamp(34px, 5vw, 56px)/1.05 var(--font-display); letter-spacing: -0.02em; margin: 0 0 18px; text-wrap: balance; }
 .landing .lede { color: var(--ink-soft); font-size: 18px; line-height: 1.55; max-width: 36rem; margin: 0 auto 28px; }
 .landing .cta { display: inline-flex; width: auto; padding: 13px 28px; font-size: 15px; border-radius: 10px; }
 
