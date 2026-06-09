@@ -51,6 +51,16 @@ body {
 
 ::selection { background: var(--accent); color: #fff; }
 
+/* warm, slim scrollbars that match the paper theme instead of the OS default */
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong); border-radius: 999px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+::-webkit-scrollbar-track { background: transparent; }
+
 /* ── App shell ───────────────────────────────────────────────────────────── */
 .app { max-width: 1400px; margin: 0 auto; padding: 24px 36px 80px; }
 
