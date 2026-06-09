@@ -32,6 +32,9 @@
 
 * { box-sizing: border-box; }
 
+/* native controls (text-cursor, selection, file picker) pick up the brand accent */
+:root { accent-color: var(--accent); }
+
 html, body { height: 100%; }
 body {
   margin: 0;
