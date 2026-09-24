@@ -142,14 +142,17 @@ def name_regions(image: Image.Image, regions: list[list[float]]) -> list[str]:
     client = _genai()
     if client is None or not regions:
         return []
-    boxes = "; ".join(f"{i}:[{','.join(f'{v:.2f}' for v in r)}]" for i, r in enumerate(regions))
+    # Send each region as its own crop. Asked to read fractional boxes off the full frame,
+    # Gemini named the wrong object (the Nike sample's store sign came back as the slogan).
+    W, H = image.size
+    crops = [image.crop((int(x * W), int(y * H), int((x + w) * W), int((y + h) * H)))
+             for x, y, w, h in regions]
     prompt = (
-        "Each box below is [x,y,w,h] as fractions of this image's width/height. "
-        f"Name the main object inside each in 2-4 words. Boxes: {boxes}. "
-        'Respond ONLY JSON {"labels":["..","..."]} in the same order.'
+        f"Here are {len(crops)} crops from one ad, in order. Name the main object in each "
+        'crop in 2-4 words. Respond ONLY JSON {"labels":["..","..."]} in the same order.'
     )
     try:
-        resp = client.models.generate_content(model=settings.gemini_text_model, contents=[prompt, image])
+        resp = client.models.generate_content(model=settings.gemini_text_model, contents=[prompt, *crops])
         labels = json.loads(_first_json(resp.text)).get("labels", [])
         return [str(x) for x in labels][: len(regions)]
     except Exception:
