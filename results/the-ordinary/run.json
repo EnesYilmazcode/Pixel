@@ -1,0 +1,96 @@
+{
+ "sample": "the-ordinary",
+ "box": [
+  0.29,
+  0.44,
+  0.3,
+  0.26
+ ],
+ "base": {
+  "prom": 0.7595,
+  "abs": 0.2465
+ },
+ "edits": [
+  {
+   "k": 1,
+   "directive": "add a bold, legible, on-brand headline and call-to-action and strengthen the logo/wordmark right at the The Ordinary logo and product as a strong, high-contrast focal point",
+   "prom": 0.4969,
+   "abs": 0.0771
+  },
+  {
+   "k": 2,
+   "directive": "clearly enlarge, brighten and sharpen the The Ordinary logo and product so it becomes the single biggest, boldest focal element while gently dimming and de-cluttering the surroundings \u2014 a polished, real ad",
+   "prom": 0.5647,
+   "abs": 0.1013
+  },
+  {
+   "k": 3,
+   "directive": "reframe the The Ordinary logo and product to a clean, head-on, front-facing hero angle \u2014 square it to the camera so it faces the viewer directly and reads instantly \u2014 keep it in roughly the same spot",
+   "prom": 0.7253,
+   "abs": 0.2062
+  },
+  {
+   "k": 4,
+   "directive": "remove or clean away any objects, hands, props or background obstructions that crowd or block the The Ordinary logo and product so the product is fully visible, unobstructed, and the clear hero of the shot",
+   "prom": 0.648,
+   "abs": 0.1437
+  },
+  {
+   "k": 5,
+   "directive": "make SEVERAL coordinated changes at once to turn this into a polished campaign: remove the clutter and any objects, hands, props or stray text crowding or blocking the The Ordinary logo and product; reframe it head-on and enlarge it as the clear hero; clean and simplify the background; and add a bold, legible on-brand headline, call-to-action and wordmark on the The Ordinary logo and product",
+   "prom": 0.6645,
+   "abs": 0.1546
+  }
+ ],
+ "tree": [
+  {
+   "id": 0,
+   "parent": null,
+   "depth": 0,
+   "score": 0.7595,
+   "status": "best",
+   "directive": "original"
+  },
+  {
+   "id": 1,
+   "parent": 0,
+   "depth": 1,
+   "score": 0.6645,
+   "status": "dead",
+   "directive": "make SEVERAL coordinated changes at once to turn this into a polished campaign: "
+  },
+  {
+   "id": 2,
+   "parent": 0,
+   "depth": 1,
+   "score": 0.648,
+   "status": "dead",
+   "directive": "remove or clean away any objects, hands, props or background obstructions that c"
+  },
+  {
+   "id": 3,
+   "parent": 0,
+   "depth": 1,
+   "score": 0.7253,
+   "status": "dead",
+   "directive": "reframe the The Ordinary logo and product to a clean, head-on, front-facing hero"
+  },
+  {
+   "id": 4,
+   "parent": 0,
+   "depth": 1,
+   "score": 0.4969,
+   "status": "dead",
+   "directive": "add a bold, legible, on-brand headline and call-to-action and strengthen the log"
+  },
+  {
+   "id": 5,
+   "parent": 0,
+   "depth": 1,
+   "score": 0.5647,
+   "status": "dead",
+   "directive": "clearly enlarge, brighten and sharpen the The Ordinary logo and product so it be"
+  }
+ ],
+ "final": 0.7595
+}
