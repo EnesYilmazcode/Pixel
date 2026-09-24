@@ -176,13 +176,22 @@ def _density(arr: np.ndarray) -> np.ndarray:
 
 
 # --- rendering / features ---------------------------------------------------------
+# Normalize the overlay against a high percentile, not the max. A DeepGaze density is
+# extremely peaked — on the shipped samples the median pixel is ~0.2% of the max — so
+# dividing by the max collapsed 94% of the frame below 10% opacity and 77% below 3%,
+# which rendered as no overlay at all. The percentile keeps the same shape but spends
+# the alpha range on the part of the map a person can actually see.
+HEATMAP_PCT = 98.0
+HEATMAP_GAMMA = 0.65
+HEATMAP_MAX_ALPHA = 205
+
+
 def _heatmap_data_url(density: np.ndarray) -> str:
-    d = density / (density.max() + 1e-9)
-    a = (d ** 0.7 * 220).astype(np.uint8)
+    d = np.clip(density / (np.percentile(density, HEATMAP_PCT) + 1e-12), 0.0, 1.0)
     rgba = np.zeros((*d.shape, 4), np.uint8)
-    rgba[..., 0] = 255                       # red channel
-    rgba[..., 1] = (d * 180).astype(np.uint8)  # toward yellow at peaks
-    rgba[..., 3] = a
+    rgba[..., 0] = 255                                          # red channel
+    rgba[..., 1] = ((1.0 - d) * 195).astype(np.uint8)           # hot core reads red, tail amber
+    rgba[..., 3] = (d ** HEATMAP_GAMMA * HEATMAP_MAX_ALPHA).astype(np.uint8)
     buf = io.BytesIO()
     Image.fromarray(rgba, "RGBA").save(buf, format="PNG")
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
