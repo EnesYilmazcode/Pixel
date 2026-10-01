@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { PredictResult, AgentsResult } from "./api";
+import { DEMO, fmtPts, type PredictResult, type AgentsResult } from "./api";
 
 // Live activity feed. Reveals the REAL pipeline (pred + agents.iterations) step by
 // step on a timer, so the run reads as a live process instead of an instant jump.
@@ -48,7 +48,7 @@ export default function ActivityLog({ busy, pred, agents }: Props) {
 
   return (
     <div className="block log">
-      <h3>Live activity</h3>
+      <h3>{DEMO ? "Activity (recorded)" : "Live activity"}</h3>
       <div className="loglines">
         {analyzing && <Line state="run" label="DeepGaze" detail="predicting attention…" />}
 
@@ -74,7 +74,7 @@ export default function ActivityLog({ busy, pred, agents }: Props) {
 
         {agents && shown >= steps.length && (
           <Line state="done" good label="Result"
-            detail={`${pct(agents.baseline_score)}% → ${pct(agents.final_score)}% (+${pct(agents.delta)} pts)`} />
+            detail={`${pct(agents.baseline_score)}% → ${pct(agents.final_score)}% (${fmtPts(agents.delta)} pts)`} />
         )}
       </div>
     </div>

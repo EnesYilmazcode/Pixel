@@ -1,21 +1,25 @@
 import { useEffect, useState } from "react";
-import type { TreeNode } from "./api";
+import { fmtPts, type TreeNode } from "./api";
 
 // The interactive optimization workspace: the original ad broken into branch-search
 // variants. Click any node to load its image + the exact Nano Banana prompt that made
 // it, with its attention score and lift vs the original. Self-contained (own state) so
 // it composes cleanly into App without extra wiring.
-export default function BranchWorkspace({ tree, baseline }: { tree: TreeNode[]; baseline: number }) {
+export default function BranchWorkspace({ tree, baseline, showHeat = true }:
+  { tree: TreeNode[]; baseline: number; showHeat?: boolean }) {
   const root = tree.find((n) => n.parent === null) ?? tree[0];
-  const best = tree.reduce((a, b) => (b.score > a.score ? b : a), root);
+  // The winner is the branch the optimizer adopted, not the highest number: a branch the
+  // Judge vetoed or the guard rejected can score higher and still lose.
+  const best = tree.find((n) => n.status === "best") ?? root;
+  const keptIds = new Set(tree.filter((n) => n.status === "best" || n.status === "alive").map((n) => n.id));
   const [sel, setSel] = useState<number>(best.id);
   useEffect(() => setSel(best.id), [best.id]);
 
   const node = tree.find((n) => n.id === sel) ?? best;
   const depths = Array.from(new Set(tree.map((n) => n.depth))).sort((a, b) => a - b);
   const isOriginal = node.parent === null;
-  const delta = Math.round((node.score - baseline) * 100);
-  const kept = node.id === best.id && best.id !== root.id;
+  const delta = node.score - baseline;
+  const kept = keptIds.has(node.id);
 
   return (
     <section className="workspace">
@@ -30,7 +34,7 @@ export default function BranchWorkspace({ tree, baseline }: { tree: TreeNode[]; 
             {node.image ? (
               <>
                 <img className="base" src={node.image} alt="selected variant" />
-                {node.heatmap && <img className="heat" src={node.heatmap} alt="attention" />}
+                {showHeat && node.heatmap && <img className="heat" src={node.heatmap} alt="attention" />}
               </>
             ) : (
               <div className="ws-noimg">
@@ -50,7 +54,7 @@ export default function BranchWorkspace({ tree, baseline }: { tree: TreeNode[]; 
             <span className="ws-lbl">attention on target</span>
             {!isOriginal && (
               <span className={`ws-delta ${delta >= 0 ? "up" : "down"}`}>
-                {delta >= 0 ? "+" : ""}{delta} pts vs original
+                {fmtPts(delta)} pts vs original
               </span>
             )}
           </div>
@@ -61,7 +65,7 @@ export default function BranchWorkspace({ tree, baseline }: { tree: TreeNode[]; 
             </p>
             {!isOriginal && (
               <div className={`ws-verdict ${kept ? "kept" : "pruned"}`}>
-                {kept ? "✓ kept — best score this round" : "✕ pruned — didn't beat the original"}
+                {kept ? "✓ kept, adopted as the new best" : `✕ not kept: ${node.note ?? "didn't beat the original"}`}
               </div>
             )}
           </div>
@@ -71,13 +75,13 @@ export default function BranchWorkspace({ tree, baseline }: { tree: TreeNode[]; 
       <div className="ws-tree">
         {depths.map((d) => (
           <div className="ws-col" key={d}>
-            <div className="ws-col-h">{d === 0 ? "original" : `round ${d} · ${tree.filter((n) => n.depth === d).length} edits`}</div>
+            <div className="ws-col-h">{d === 0 ? "original" : `round ${d} · ${tree.filter((n) => n.depth === d).length} edit${tree.filter((n) => n.depth === d).length === 1 ? "" : "s"}`}</div>
             <div className="ws-col-nodes">
               {tree
                 .filter((n) => n.depth === d)
                 .sort((a, b) => b.score - a.score)
                 .map((n, i) => {
-                  const win = n.id === best.id && best.id !== root.id;
+                  const win = keptIds.has(n.id);
                   const dead = n.parent !== null && !win;
                   const cls = n.parent === null ? "root" : win ? "best" : "dead";
                   return (

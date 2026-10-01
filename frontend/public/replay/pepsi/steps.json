@@ -1,0 +1,82 @@
+[
+ {
+  "step": 0,
+  "directive": "make SEVERAL coordinated changes at once to turn this into a polished campaign: remove the clutter and any objects, hands, props or stray text crowding or blocking the Pepsi logo and product; reframe it head-on and enlarge it as the clear hero; clean and simplify the background; and add a bold, legible on-brand headline, call-to-action and wordmark on the Pepsi logo and product",
+  "variant_png": "replay/pepsi/step0.jpg",
+  "current_score": 0.8554,
+  "new_score": 0.5795,
+  "delta": -0.2759,
+  "target_salience_before": 0.9018,
+  "target_salience_after": 0.2102,
+  "judge": 0.4,
+  "judge_reason": "The ad creative is very basic and generic. While it uses Pepsi's brand colors and features the product, the photography of the can is flat, lacking the 'cold' or 'refreshing' visual cues (like condensation or vibrant lighting) typically used in beverage advertising to create desire. The typography is simple and functional but not distinctive, and the overall composition lacks creativity or a unique selling proposition beyond a very generic 'refresh your day.' It feels more like an internal draft or a low-budget social media filler than a polished, professionally produced ad from a global brand like Pepsi. It would likely be rejected or require significant improvements in photography and creative direction to run as a real ad.",
+  "vetoed": true,
+  "guard": "reject",
+  "guard_reasons": [
+   "attention score did not improve"
+  ],
+  "improved": false,
+  "n_directives": 6,
+  "variant_heatmap": "replay/pepsi/step0-heat.png"
+ },
+ {
+  "step": 1,
+  "directive": "add a bold, legible, on-brand headline and call-to-action and strengthen the logo/wordmark right at the Pepsi logo and product as a strong, high-contrast focal point",
+  "variant_png": "replay/pepsi/step1.jpg",
+  "current_score": 0.8554,
+  "new_score": 0.5471,
+  "delta": -0.3083,
+  "target_salience_before": 0.9018,
+  "target_salience_after": 0.1842,
+  "judge": 0.5,
+  "judge_reason": "This creative has good brand-fit due to its iconic Pepsi blue background, prominent display of the product, and use of plausible cola slogans like 'REFRESH YOUR WORLD' and 'TASTE THE BREAK.' However, the overall quality falls short of what a major global brand like Pepsi would typically produce. The photography is basic, lacking the dynamic lighting, crispness, and visual appeal usually seen in professional ad campaigns (e.g., no condensation, somewhat flat lighting). The composition is extremely simple, almost to the point of being bland, and the use of two distinct taglines at the top and bottom can feel disjointed rather than cohesive. While it effectively communicates the brand and core message, its execution quality suggests it's more of a concept or mock-up rather than a finished ad that would run as-is in a real campaign for Pepsi.",
+  "vetoed": false,
+  "guard": "reject",
+  "guard_reasons": [
+   "attention score did not improve"
+  ],
+  "improved": false,
+  "n_directives": 6,
+  "variant_heatmap": "replay/pepsi/step1-heat.png"
+ },
+ {
+  "step": 2,
+  "directive": "clearly enlarge, brighten and sharpen the Pepsi logo and product so it becomes the single biggest, boldest focal element while gently dimming and de-cluttering the surroundings \u2014 a polished, real ad",
+  "variant_png": "replay/pepsi/step2.jpg",
+  "current_score": 0.8554,
+  "new_score": 0.7039,
+  "delta": -0.1515,
+  "target_salience_before": 0.9018,
+  "target_salience_after": 0.3625,
+  "judge": 0.65,
+  "judge_reason": "The ad is clear, on-brand with the prominent Pepsi can and the signature blue color palette. The slogan 'TASTE THE REFRESHMENT' is direct and relevant to a beverage product. It's a clean, minimalist design that effectively communicates the product and a core benefit. However, the overall visual quality is somewhat flat; it lacks the dynamic lighting, condensation, or other visual cues often used in beverage advertising to truly evoke the feeling of 'refreshment' and make the product more enticing. It feels functional but lacks creative sparkle or high production value typically seen in leading Pepsi campaigns. It could definitely run as a real ad, especially for digital banners, social media posts, or tactical print, but it's not a particularly strong or memorable piece of advertising that would anchor a major campaign.",
+  "vetoed": false,
+  "guard": "reject",
+  "guard_reasons": [
+   "attention score did not improve"
+  ],
+  "improved": false,
+  "n_directives": 6,
+  "variant_heatmap": "replay/pepsi/step2-heat.png"
+ },
+ {
+  "step": 3,
+  "directive": "remove or clean away any objects, hands, props or background obstructions that crowd or block the Pepsi logo and product so the product is fully visible, unobstructed, and the clear hero of the shot",
+  "variant_png": "replay/pepsi/step3.jpg",
+  "current_score": 0.8554,
+  "new_score": 0.6764,
+  "delta": -0.179,
+  "target_salience_before": 0.9018,
+  "target_salience_after": 0.3188,
+  "judge": 0.8,
+  "judge_reason": "This Pepsi ad creative is simple, clean, and effective. The product is prominently featured against a vibrant blue background that perfectly aligns with Pepsi's brand colors. The photography of the can is good, and the text 'REFRESH YOUR WORLD' is legible and conveys a core brand benefit. It's a very direct and functional ad that fits the brand well in terms of color, product, and message. It would absolutely run as a real ad, especially in digital formats (social media, banner ads) where quick recognition and clear messaging are key. However, it scores slightly lower than a perfect 1.0 because it's quite basic and lacks the high-end creative flair, dynamic elements (like condensation, ice, or lifestyle context), or unique visual storytelling often seen in major, aspirational campaigns from a brand like Pepsi. It's a solid, safe, and brand-appropriate ad, but not groundbreaking.",
+  "vetoed": false,
+  "guard": "reject",
+  "guard_reasons": [
+   "attention score did not improve"
+  ],
+  "improved": false,
+  "n_directives": 6,
+  "variant_heatmap": "replay/pepsi/step3-heat.png"
+ }
+]

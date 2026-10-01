@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { UserButton, SignInButton, Show } from "@clerk/react";
-import { predict, optimizeStep, health, USE_MOCK_PREDICT, type PredictResult, type AgentsResult, type TreeNode, type Fixation, type Health } from "./api";
+import { predict, optimizeStep, health, DEMO, fmtPts, type PredictResult, type AgentsResult, type TreeNode, type Fixation, type Health } from "./api";
 import { SAMPLES, type Sample } from "./samples";
 import HeroBranches from "./HeroBranches";
 import BranchWorkspace from "./BranchWorkspace";
 import ActivityLog from "./ActivityLog";
+import { thumb } from "./replay";
+
+const REPO = "https://github.com/EnesYilmazcode/Pixel";
 
 // UserButton must live inside a ClerkProvider; main.tsx only mounts one when a key exists.
-const HAS_CLERK = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const HAS_CLERK = !DEMO && !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 // Download a data-URL image (the finalized optimized creative).
 function downloadImage(dataUrl: string, name: string) {
@@ -53,6 +56,7 @@ export default function App() {
   const [stepCtl, setStepCtl] = useState<StepCtl | null>(null);
   const [hint, setHint] = useState(""); // optional user suggestion fed to Nano Banana
   const [hp, setHp] = useState<Health | null>(null); // /health → drives the LIVE/DEMO badge
+  const [showHeat, setShowHeat] = useState(true);
 
   // Poll /health once on mount so the badge honestly reflects whether the REAL model loaded.
   useEffect(() => { health().then(setHp).catch(() => setHp(null)); }, []);
@@ -76,7 +80,7 @@ export default function App() {
       setActive(s); setBrand(s.brand); setAgents(null); setPred(null);
       setFile(f); setImgUrl(s.img);
       setBusy("Analyzing attention…");
-      setPred(await predict(f, s.target_box)); // real backend scores attention in the brand's region
+      setPred(await predict(f, s.target_box, s.id)); // real backend scores attention in the brand's region
     } catch (e) {
       alert(String(e));
     } finally {
@@ -87,7 +91,7 @@ export default function App() {
   async function analyze() {
     if (!file) return;
     setBusy("Analyzing attention…"); setStepCtl(null); setAgents(null);
-    try { setPred(await predict(file, active?.target_box)); }
+    try { setPred(await predict(file, active?.target_box, active?.id)); }
     catch (e) { alert(String(e)); }
     finally { setBusy(""); }
   }
@@ -99,7 +103,7 @@ export default function App() {
     let p = pred;
     if (!p) {
       setBusy("Eye · scoring baseline attention…");
-      try { p = await predict(file, active?.target_box); setPred(p); }
+      try { p = await predict(file, active?.target_box, active?.id); setPred(p); }
       catch (e) { alert(String(e)); setBusy(""); return; }
     }
     const baseline = p.attention_score;
@@ -131,7 +135,7 @@ export default function App() {
     setBusy(`Retoucher · branch ${ctl.step + 1} with Nano Banana…`);
     try {
       const src = ctl.step === 0 ? file : await dataUrlToFile(ctl.bestImgUrl, "best.png");
-      const res = await optimizeStep(src, brand, ctl.step, active?.target_box, hint);
+      const res = await optimizeStep(src, brand, ctl.step, active?.target_box, hint, active?.id);
       const newScore = res.new_score;          // real size-invariant prominence (can be lower)
       const improved = res.improved;           // real: rose AND not vetoed AND guard accepted
       const becomesBest = improved && newScore > ctl.bestScore;
@@ -139,7 +143,7 @@ export default function App() {
       const node: TreeNode = {
         id, parent: ctl.bestNodeId, depth: ctl.step + 1, score: newScore,
         status: becomesBest ? "best" : "dead", // failed attempts are shown as pruned, not winners
-        directive: res.directive, image: res.variant_png,
+        directive: res.directive, image: res.variant_png, heatmap: res.variant_heatmap,
       };
       const reason = res.vetoed
         ? `Judge vetoed it (brand-fit ${res.judge})`
@@ -152,6 +156,7 @@ export default function App() {
       const nextBestScore = becomesBest ? newScore : ctl.bestScore;
       const nextBestNodeId = becomesBest ? id : ctl.bestNodeId;
       const nextBestImgUrl = becomesBest ? res.variant_png : ctl.bestImgUrl;
+      if (!becomesBest) node.note = reason || "not adopted";
       setAgents((prev) => {
         if (!prev) return prev;
         let tree = [...(prev.tree ?? []), node];
@@ -161,7 +166,7 @@ export default function App() {
             n.id === ctl.bestNodeId && n.status !== "root" ? { ...n, status: "alive" } : n);
         }
         const summary = becomesBest
-          ? `✓ kept · ${Math.round(newScore * 100)}% (+${Math.round((newScore - ctl.baseline) * 100)} pts)`
+          ? `✓ kept · ${Math.round(newScore * 100)}% (${fmtPts(newScore - ctl.baseline)} pts)`
           : `✕ ${Math.round(newScore * 100)}% — ${reason || "not adopted"}`;
         const iterations = [...prev.iterations, {
           agent: `Branch ${ctl.step + 1}`, status: "done", summary: summary.slice(0, 96),
@@ -170,6 +175,7 @@ export default function App() {
           ...prev, tree, iterations,
           // headline image + score reflect the BEST so far, never a regressing branch
           variant_png: nextBestNodeId === 0 ? "" : nextBestImgUrl,
+          heatmap_after: becomesBest ? (res.variant_heatmap ?? "") : prev.heatmap_after,
           final_score: nextBestScore, delta: nextBestScore - ctl.baseline,
         };
       });
@@ -200,7 +206,11 @@ export default function App() {
           <h1>Pixel</h1>
         </span>
         <span className="spacer" />
-        {hp && (
+        {DEMO ? (
+          <span className="modebadge replay" title="Recorded runs of the real DeepGaze model and Gemini agents">
+            <span className="md-dot" />REPLAY
+          </span>
+        ) : hp && (
           <span
             className={`modebadge ${hp.deepgaze_loaded ? "live" : "demo"}`}
             title={`engine: ${hp.engine}${hp.device ? " · " + hp.device : ""} · gemini ${hp.gemini ? "on" : "off"}`}
@@ -209,6 +219,7 @@ export default function App() {
             {hp.deepgaze_loaded ? "LIVE · DeepGaze" : "DEMO · fallback"}
           </span>
         )}
+        {DEMO && <a className="ghost srclink" href={REPO} target="_blank" rel="noreferrer">GitHub</a>}
         {HAS_CLERK && (
           <span className="auth">
             <Show when="signed-out">
@@ -218,6 +229,11 @@ export default function App() {
           </span>
         )}
       </header>
+      {DEMO && (
+        <p className="demo-note">
+          Static demo: it replays runs recorded on the real backend (DeepGaze IIE on a GPU, Gemini agents). Nothing runs live.
+        </p>
+      )}
 
       {!imgUrl ? (
         <>
@@ -234,17 +250,17 @@ export default function App() {
             <HeroBranches />
           </section>
 
-          <div className="uploadrow">
+          {!DEMO && <div className="uploadrow">
             <label className="filebtn">
               ↑ Upload your own ad
               <input type="file" accept="image/*" onChange={onPick} />
             </label>
             <span className="or">or pick a sample below</span>
-          </div>
+          </div>}
 
           <div className="gallery-head">
             <h3>Sample campaigns</h3>
-            <span className="hint">click one to analyze →</span>
+            <span className="hint">{DEMO ? "tap one to analyze" : "click one to analyze →"}</span>
           </div>
           <div className="gallery">
             {SAMPLES.map((s) => (
@@ -252,7 +268,7 @@ export default function App() {
                 <span className="thumb">
                   <span className="ph" style={{ background: s.tint }}>{s.brand[0]}</span>
                   <img
-                    src={s.img}
+                    src={DEMO ? thumb(s.id) : s.img}
                     alt={`${s.brand} — ${s.campaign}`}
                     loading="lazy"
                     decoding="async"
@@ -262,7 +278,7 @@ export default function App() {
                 </span>
                 <span className="meta">
                   <span className="b"><span className="swatch" style={{ background: s.tint }} />{s.brand}</span>
-                  <span className="c">{s.campaign}{s.note ? " ·*" : ""}</span>
+                  <span className="c">{s.campaign}{s.note && !DEMO ? " ·*" : ""}</span>
                 </span>
               </button>
             ))}
@@ -272,6 +288,7 @@ export default function App() {
       ) : (
         <>
           <div className="controls">
+            {!DEMO && <>
             <label className="filebtn">
               ↑ New image
               <input type="file" accept="image/*" onChange={onPick} />
@@ -286,6 +303,7 @@ export default function App() {
               <input type="text" value={hint} onChange={(e) => setHint(e.target.value)}
                 placeholder="tell Nano Banana what to change…" autoComplete="off" spellCheck={false} />
             </span>
+            </>}
             <button onClick={analyze} disabled={!file || !!busy}>Analyze</button>
             <button onClick={optimize} disabled={!file || !!busy} className="primary"
               title="Run the agent fleet: edit the ad, re-score attention, and grow the branch tree">Optimize ✦</button>
@@ -301,14 +319,19 @@ export default function App() {
             <div className="canvas" aria-busy={!!busy}>
               <div className="frame">
                 <img className="base" src={agents?.variant_png || imgUrl} alt="campaign" />
-                {agents?.heatmap_after ? (
-                  <img className="heat" src={agents.heatmap_after} alt="optimized heatmap" />
+                {showHeat && (agents?.variant_png ? (
+                  agents.heatmap_after && <img className="heat" src={agents.heatmap_after} alt="optimized heatmap" />
                 ) : (
                   pred && <HeatmapOverlay pred={pred} />
-                )}
+                ))}
                 {pred && targetBox && <TargetBox box={targetBox} />}
                 {!agents && pred?.scanpath && <Scanpath pts={pred.scanpath} />}
-                {agents && <span className="frame-badge">✦ optimized</span>}
+                {agents?.variant_png && <span className="frame-badge">✦ optimized</span>}
+                {pred && (
+                  <button className="heat-toggle" onClick={() => setShowHeat(!showHeat)} aria-pressed={showHeat}>
+                    {showHeat ? "Hide heat" : "Show heat"}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -326,7 +349,7 @@ export default function App() {
                       <span className="vals">{Math.round(agents.baseline_score * 100)}%</span>
                       <span className="arrow">→</span>
                       <span className="vals">{Math.round(agents.final_score * 100)}%</span>
-                      <span className="lift">+{Math.round(agents.delta * 100)} pts</span>
+                      <span className="lift">{fmtPts(agents.delta)} pts</span>
                     </div>
                   )}
                 </div>
@@ -362,7 +385,7 @@ export default function App() {
                 </div>
               )}
 
-              {active?.note && (
+              {active?.note && !DEMO && (
                 <p className="rationale" style={{ borderTop: "none", paddingTop: 0 }}>
                   * {active.brand}: {active.note}.
                 </p>
@@ -378,12 +401,12 @@ export default function App() {
                 <>
                   <span className="bc-msg">
                     {stepCtl.lastImproved
-                      ? `✓ Branch ${stepCtl.step} kept — attention now ${Math.round(stepCtl.lastScore * 100)}% (+${Math.round((stepCtl.bestScore - stepCtl.baseline) * 100)} pts total)`
+                      ? `✓ Branch ${stepCtl.step} kept — attention now ${Math.round(stepCtl.lastScore * 100)}% (${fmtPts(stepCtl.bestScore - stepCtl.baseline)} pts total)`
                       : `✕ Branch ${stepCtl.step} not adopted — ${Math.round(stepCtl.lastScore * 100)}%${stepCtl.lastReason ? `, ${stepCtl.lastReason}` : ""}`}
                   </span>
                   <span className="spacer" />
                   {stepCtl.exhausted
-                    ? <span className="bc-note">all directions explored</span>
+                    ? <span className="bc-note">{DEMO ? "end of the recorded run" : "all directions explored"}</span>
                     : <button className="primary" onClick={() => runBranch(stepCtl)}>Spawn another branch ✦</button>}
                   <button className="ghost" onClick={() => setStepCtl({ ...stepCtl, awaiting: false, done: true })}>
                     {stepCtl.bestScore > stepCtl.baseline ? "Stop — use this result" : "Stop"}
@@ -394,7 +417,7 @@ export default function App() {
           )}
 
           {agents?.tree?.length ? (
-            <BranchWorkspace tree={agents.tree} baseline={agents.baseline_score} />
+            <BranchWorkspace tree={agents.tree} baseline={agents.baseline_score} showHeat={showHeat} />
           ) : null}
         </>
       )}

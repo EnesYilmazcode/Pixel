@@ -1,0 +1,61 @@
+{
+ "width": 1400,
+ "height": 2100,
+ "attention_score": 0.7581,
+ "heatmap_png": "replay/apple/heat.png",
+ "target_box": [
+  0.32,
+  0.2,
+  0.36,
+  0.62
+ ],
+ "scanpath": [
+  {
+   "x": 0.484,
+   "y": 0.371,
+   "order": 1
+  },
+  {
+   "x": 0.523,
+   "y": 0.634,
+   "order": 2
+  },
+  {
+   "x": 0.478,
+   "y": 0.942,
+   "order": 3
+  },
+  {
+   "x": 0.521,
+   "y": 0.511,
+   "order": 4
+  },
+  {
+   "x": 0.158,
+   "y": 0.489,
+   "order": 5
+  }
+ ],
+ "distractors": [
+  {
+   "region": [
+    0.3809,
+    0.8443,
+    0.2,
+    0.2
+   ],
+   "share": 0.09,
+   "desc": "Smartwatch band"
+  },
+  {
+   "region": [
+    0.0,
+    0.3912,
+    0.2,
+    0.2
+   ],
+   "share": 0.027,
+   "desc": "Abstract blurred image"
+  }
+ ]
+}

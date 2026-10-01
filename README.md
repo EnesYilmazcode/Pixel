@@ -4,7 +4,8 @@
 Pixel runs a gaze model over an ad, finds what is pulling the eye away from the brand, and has a team of AI agents redesign it. Every edit is re-scored by the gaze model, and edits that don't raise the score are thrown out.</p>
 
 <p align="center">
-  <img src="assets/media/deepgaze.gif" width="400" alt="DeepGaze attention heatmaps and predicted fixation order drawn over four sample ads">
+  <a href="https://sparkylab.web.app/pixel/"><img src="assets/media/deepgaze.gif" width="400" alt="DeepGaze attention heatmaps and predicted fixation order drawn over four sample ads"></a><br>
+  <a href="https://sparkylab.web.app/pixel/"><b>Try the demo</b></a>
 </p>
 
 <p align="center">Built in one day at Multimodal Hacks (NY Tech Week, June 6 2026) with <a href="https://github.com/rishis123">Rishi Shah</a>.</p>
@@ -84,6 +85,8 @@ npm run dev                                         # http://localhost:5173
 ```
 
 Keys go in git-ignored files: `GEMINI_API_KEY`, `PINECONE_API_KEY` and `PINECONE_INDEX` in `backend/.env`, and `VITE_CLERK_PUBLISHABLE_KEY` in `frontend/.env.local`. Seed the competitor index once with `python backend/pinecone_seed.py`. Without a Gemini key the app still analyzes ads, but edits come back unchanged. DeepGaze runs on the GPU when there is one and on the CPU otherwise.
+
+The [live demo](https://sparkylab.web.app/pixel/) is the same frontend replaying runs recorded on the real backend, so it needs no server and no keys. `python scripts/record_demo.py` records them and `npm run build:demo` in `frontend` writes the static site to `web-dist/`.
 
 To rebuild the figures in this README:
 

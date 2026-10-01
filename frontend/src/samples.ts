@@ -1,4 +1,4 @@
-// Preset demo campaigns. Images live in /public/samples (served at /samples/*).
+// Preset demo campaigns. Images live in /public/samples (served at <base>samples/*).
 // Sourced by the agent fleet from hotlink-friendly hosts (Unsplash/Pexels);
 // target_box is a normalized [x,y,w,h] guess for the brand's intended focus
 // (logo / product / CTA) — the region we score attention against.
@@ -13,12 +13,16 @@ export type Sample = {
   note?: string;
 };
 
+// The static demo shows a lighter display copy saved next to its recorded run.
+const img = (id: string) => import.meta.env.BASE_URL +
+  (import.meta.env.MODE === "demo" ? `replay/${id}/image.jpg` : `samples/${id}.jpg`);
+
 export const SAMPLES: Sample[] = [
   {
     id: "the-ordinary",
     brand: "The Ordinary",
     campaign: "Serum droppers — model hero",
-    img: "/samples/the-ordinary.jpg",
+    img: img("the-ordinary"),
     target_box: [0.29, 0.44, 0.3, 0.26],
     target_desc: "The two amber serum dropper bottles she's holding, lower-center.",
     tint: "#7A5C3E",
@@ -28,7 +32,7 @@ export const SAMPLES: Sample[] = [
     id: "coca-cola",
     brand: "Coca-Cola",
     campaign: "Can — product hero",
-    img: "/samples/coca-cola.jpg",
+    img: img("coca-cola"),
     target_box: [0.33, 0.28, 0.33, 0.64],
     target_desc: "The white Coca-Cola script wrapping the can, center-frame.",
     tint: "#E61A27",
@@ -37,7 +41,7 @@ export const SAMPLES: Sample[] = [
     id: "nike",
     brand: "Nike",
     campaign: "“Just Do It” billboard, NYC",
-    img: "/samples/nike.jpg",
+    img: img("nike"),
     target_box: [0.3, 0.18, 0.45, 0.3],
     target_desc: "The swoosh + “JUST DO IT” on the building-side billboard.",
     tint: "#111111",
@@ -46,7 +50,7 @@ export const SAMPLES: Sample[] = [
     id: "apple",
     brand: "Apple",
     campaign: "iPhone — product hero",
-    img: "/samples/apple.jpg",
+    img: img("apple"),
     target_box: [0.32, 0.2, 0.36, 0.62],
     target_desc: "The iPhone held center-frame over an open palm.",
     tint: "#1D1D1F",
@@ -55,7 +59,7 @@ export const SAMPLES: Sample[] = [
     id: "mcdonalds",
     brand: "McDonald's",
     campaign: "Golden Arches sign",
-    img: "/samples/mcdonalds.jpg",
+    img: img("mcdonalds"),
     target_box: [0.26, 0.31, 0.52, 0.33],
     target_desc: "The Arches + red nameplate, centered on a dark ground.",
     tint: "#FFC72C",
@@ -64,7 +68,7 @@ export const SAMPLES: Sample[] = [
     id: "red-bull",
     brand: "Red Bull",
     campaign: "Can on a creative desk",
-    img: "/samples/red-bull.jpg",
+    img: img("red-bull"),
     target_box: [0.34, 0.28, 0.26, 0.5],
     target_desc: "The can + twin-bull logo amid desk clutter (gadgets compete).",
     tint: "#001489",
@@ -73,7 +77,7 @@ export const SAMPLES: Sample[] = [
     id: "spotify",
     brand: "Spotify",
     campaign: "App in hand",
-    img: "/samples/spotify.jpg",
+    img: img("spotify"),
     target_box: [0.32, 0.28, 0.4, 0.5],
     target_desc: "The green Spotify UI on the phone screen, center-frame.",
     tint: "#1DB954",
@@ -82,7 +86,7 @@ export const SAMPLES: Sample[] = [
     id: "pepsi",
     brand: "Pepsi",
     campaign: "Can on blue",
-    img: "/samples/pepsi.jpg",
+    img: img("pepsi"),
     target_box: [0.33, 0.3, 0.34, 0.45],
     target_desc: "The Pepsi globe on the can face, center against blue.",
     tint: "#004B93",

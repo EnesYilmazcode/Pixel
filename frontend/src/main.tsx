@@ -7,7 +7,8 @@ import "./index.css";
 // The playground IS the homescreen for everyone. Auth is optional: with a Clerk key
 // the header shows "Log in" / your profile (and you can save projects); without a key
 // the app still boots fully. No separate marketing/landing gate.
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+// The static demo never signs anyone in, so it skips Clerk entirely.
+const publishableKey = import.meta.env.MODE === "demo" ? "" : import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

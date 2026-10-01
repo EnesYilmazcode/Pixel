@@ -196,6 +196,8 @@ header h1 {
   font-family: var(--font-display); font-size: 30px; color: #fff;
   letter-spacing: -0.02em;
 }
+/* spans inside a button are inline, which drops aspect-ratio and hides the caption */
+.card .thumb, .card .meta { display: block; }
 .card .meta { padding: 12px 13px 14px; }
 .card .meta .b {
   font-weight: 600; font-size: 14.5px; letter-spacing: -0.01em;
@@ -648,3 +650,23 @@ button.ghost:hover:not(:disabled) { color: var(--ink); border-color: transparent
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Static replay demo (vite build --mode demo) ─────────────────────────── */
+.modebadge.replay { color: var(--ink-soft); background: var(--bg-tint); }
+.modebadge.replay .md-dot { background: var(--muted); }
+a.srclink {
+  color: var(--muted); font: 600 13px var(--font-sans); text-decoration: none;
+  padding: 6px 4px;
+}
+a.srclink:hover { color: var(--ink); }
+.demo-note {
+  margin: 10px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45;
+}
+.heat-toggle {
+  position: absolute; right: 10px; bottom: 10px; z-index: 3;
+  font: 600 11px var(--font-mono); letter-spacing: 0.03em; line-height: 1;
+  padding: 7px 11px; border-radius: 999px; cursor: pointer;
+  color: #fff; background: rgba(27,24,19,0.62); border: 1px solid rgba(255,255,255,0.25);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.heat-toggle:hover { background: rgba(27,24,19,0.8); }
