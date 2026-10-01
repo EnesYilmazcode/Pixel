@@ -9,7 +9,7 @@ import react from "@vitejs/plugin-react";
 const API = process.env.VITE_API_BASE || "http://127.0.0.1:8000";
 const opt = { target: API, changeOrigin: true, timeout: 600000, proxyTimeout: 600000 };
 
-// `vite build --mode demo` builds the static replay demo served at sparkylab.web.app/pixel/.
+// `vite build --mode demo` builds the static replay demo served at pixel-gaze.web.app.
 const DEMO_OUT = resolve(__dirname, "../web-dist");
 
 // public/ also holds files the demo never loads: the 9 MB June Nike run, and the full-size
@@ -30,7 +30,6 @@ export default defineConfig(({ mode }) => {
   const demo = mode === "demo";
   return {
     plugins: [react(), demo && dropUnusedPublicFiles()],
-    base: demo ? "/pixel/" : "/",
     build: demo ? { outDir: DEMO_OUT, emptyOutDir: true } : {},
     server: {
       proxy: {
