@@ -2,6 +2,7 @@
 
     python scripts/record_demo.py                 # every sample that isn't recorded yet
     python scripts/record_demo.py nike apple      # just these (re-records them)
+    python scripts/record_demo.py --rejudge       # re-run the current guard on saved runs
 
 Calls the real FastAPI app in-process, the same way the frontend does: /predict on the
 sample, then /optimize/step a few times, re-sending the current best creative after each
@@ -102,7 +103,37 @@ def record(client: TestClient, s: dict) -> None:
     (out / "steps.json").write_text(json.dumps(steps, indent=1), encoding="utf-8")
 
 
+def rejudge(s: dict) -> None:
+    """Apply the current reward-hack guard to a saved run, using its saved scores and
+    images, so a guard change reaches the demo without paying for new edits."""
+    import eval_guard
+    out = OUT / s["id"]
+    steps = json.loads((out / "steps.json").read_text(encoding="utf-8"))
+    best = Image.open(PUBLIC / "samples" / (s["id"] + ".jpg")).convert("RGB")
+    for k, res in enumerate(steps):
+        after = Image.open(out / "step{}.jpg".format(k)).convert("RGB")
+        v = eval_guard.verdict(best, after, ratio_before=res["current_score"], ratio_after=res["new_score"],
+                               target_sal_before=res["target_salience_before"],
+                               target_sal_after=res["target_salience_after"], target_box=s["box"])
+        improved = bool(res["new_score"] > res["current_score"] and not res["vetoed"]
+                        and v["decision"] == "accept")
+        if res["improved"] and not improved and k < len(steps) - 1:
+            sys.exit("{} step {} is no longer kept, so later steps edited the wrong image; "
+                     "re-record it".format(s["id"], k))
+        if improved != res["improved"] or v["decision"] != res["guard"]:
+            print("{:14s} step {}  {} -> {}  {}".format(s["id"], k, res["guard"], v["decision"], v["reasons"][0]))
+        res.update(guard=v["decision"], guard_reasons=v["reasons"], improved=improved)
+        if improved:
+            best = after
+    (out / "steps.json").write_text(json.dumps(steps, indent=1), encoding="utf-8")
+
+
 def main_() -> None:
+    if sys.argv[1:] == ["--rejudge"]:
+        for s in samples():
+            if (OUT / s["id"] / "steps.json").exists():
+                rejudge(s)
+        return
     want = sys.argv[1:]
     client = TestClient(main.app)
     with client:
