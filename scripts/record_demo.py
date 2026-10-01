@@ -61,6 +61,7 @@ def record(client: TestClient, s: dict) -> None:
     out.mkdir(parents=True, exist_ok=True)
     src = (PUBLIC / "samples" / (sid + ".jpg")).read_bytes()
     save_jpg(src, out / "thumb.jpg", 560)
+    save_jpg(src, out / "image.jpg", EDIT_MAX)  # display copy; scoring uses the original
 
     r = client.post("/predict", files={"image": (sid + ".jpg", src, "image/jpeg")},
                     data={"target": box})
