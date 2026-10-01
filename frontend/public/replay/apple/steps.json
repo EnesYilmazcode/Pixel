@@ -53,7 +53,7 @@
   "vetoed": true,
   "guard": "reject",
   "guard_reasons": [
-   "raised the score by degrading the rest of the frame: darkened (0.68x), flattened (0.62x), desaturated (0.49x), blurred (0.69x)"
+   "raised the score by degrading the rest of the frame: darkened (0.68x), flattened (0.59x), desaturated (0.50x)"
   ],
   "improved": false,
   "n_directives": 8,
@@ -73,7 +73,7 @@
   "vetoed": false,
   "guard": "reject",
   "guard_reasons": [
-   "raised the score by degrading the rest of the frame: flattened (0.28x), desaturated (0.21x), blurred (0.40x)"
+   "raised the score by degrading the rest of the frame: flattened (0.55x), desaturated (0.30x), blurred (0.49x)"
   ],
   "improved": false,
   "n_directives": 8,
