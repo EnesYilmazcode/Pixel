@@ -156,9 +156,12 @@ def test_june_nike_edit_is_rejected():
 
 def test_recorded_honest_edits_pass_the_rest_of_frame_check():
     """Edits that changed the brand and left the scene alone must not trip the check."""
-    cases = [("nike", "step3", _NIKE_BOX), ("spotify", "step1", [0.32, 0.28, 0.4, 0.5])]
-    for sample, step, box in cases:
-        after = _PUB / "replay" / sample / f"{step}.jpg"
+    cases = [("replay/nike/step3.jpg", "nike", _NIKE_BOX),
+             ("replay/spotify/step1.jpg", "spotify", [0.32, 0.28, 0.4, 0.5]),
+             # clutter removed from the desk: a few cells change, the scene doesn't
+             ("../../results/red-bull/edit1.jpg", "red-bull", [0.34, 0.28, 0.26, 0.5])]
+    for rel, sample, box in cases:
+        after = _PUB / rel
         if not after.exists():
             continue
         before = Image.open(_PUB / "samples" / f"{sample}.jpg")
