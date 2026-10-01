@@ -47,6 +47,7 @@ DIFF_THRESH = 8         # per-pixel abs diff (0..255) counted as "changed" (~JND
 GLOBAL_COVERAGE = 0.55  # fraction of pixels changed above which an edit looks "global"
 GLOBAL_BBOX = 0.60      # change bounding-box covering more of the frame than this = "global"
 EPS = 1e-4
+GRID = 8                # cells per side for the rest-of-frame comparison
 OUTSIDE_MARGIN = 0.04   # grow the target box by this before measuring "the rest of the frame"
 # Floors for the rest of the frame, as after/before ratios. Below any of these, the edit
 # raised the score by degrading everything that isn't the brand. Calibrated on the
@@ -158,17 +159,30 @@ def _stats(rgb: np.ndarray, mask: np.ndarray) -> dict:
 
 def outside_change(before: Image.Image, after: Image.Image, box) -> dict:
     """How the rest of the frame (outside the target) changed, as after/before ratios of
-    mean luminance, luminance contrast, colorfulness and edge detail. A ratio well below
-    1 means the edit won by dimming, flattening, desaturating or blurring the scene."""
+    luminance, luminance contrast, colorfulness and edge detail. Each ratio is the MEDIAN
+    over a grid of cells, so removing one cluttering object (a few cells change) passes,
+    while dimming, flattening, desaturating or blurring the whole scene (most cells
+    change) does not. A ratio well below 1 means the edit degraded the rest of the frame."""
     w, h = before.size
     scale = min(1.0, MAX_SIDE / max(w, h))
     size = (max(8, int(w * scale)), max(8, int(h * scale)))
     a, b = _rgb(before, size), _rgb(after, size)
     mask = _outside_mask(size[1], size[0], box)
-    if mask.mean() < 0.05:  # target fills the frame; nothing outside to judge
-        return {"lum": 1.0, "contrast": 1.0, "color": 1.0, "detail": 1.0}
-    sa, sb = _stats(a, mask), _stats(b, mask)
-    return {k: round(float((sb[k] + 1.0) / (sa[k] + 1.0)), 3) for k in sa}
+    ratios: dict[str, list[float]] = {"lum": [], "contrast": [], "color": [], "detail": []}
+    ys = np.linspace(0, size[1], GRID + 1).astype(int)
+    xs = np.linspace(0, size[0], GRID + 1).astype(int)
+    for i in range(GRID):
+        for j in range(GRID):
+            cell = (slice(ys[i], ys[i + 1]), slice(xs[j], xs[j + 1]))
+            m = mask[cell]
+            if m.mean() < 0.5:  # mostly target; not "the rest of the frame"
+                continue
+            sa, sb = _stats(a[cell], m), _stats(b[cell], m)
+            for k in ratios:
+                ratios[k].append((sb[k] + 1.0) / (sa[k] + 1.0))
+    if not ratios["lum"]:  # target fills the frame; nothing outside to judge
+        return {k: 1.0 for k in ratios}
+    return {k: round(float(np.median(v)), 3) for k, v in ratios.items()}
 
 
 def degradation(oc: dict) -> list[str]:
