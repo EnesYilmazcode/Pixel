@@ -6,6 +6,11 @@ rest of the frame so the target's *share* rises while its own salience doesn't),
 and (b) **imperceptible / global** tweaks the eye can't read as a design change.
 This module gives the loop a cheap second opinion that catches those.
 
+A third cheat is the one the absolute-salience check misses: darken, desaturate, blur
+or black out everything except the brand. DeepGaze is a probability map, so pulling
+mass off the rest of the frame raises the brand's absolute share too. Pass
+`target_box` and the guard compares the rest of the frame before and after.
+
 Wiring (Pixel): `deepgaze_runner.score_components(image, box)` returns both the
 size-invariant prominence (the headline `ratio`) AND the absolute on-target salience
 mass — feed both into `verdict(...)`:
@@ -17,7 +22,7 @@ mass — feed both into `verdict(...)`:
         before_img, after_img,
         ratio_before=ratio_before, ratio_after=ratio_after,
         target_sal_before=abs_before, target_sal_after=abs_after,
-        edit_is_semantic=really_edited,
+        edit_is_semantic=really_edited, target_box=box,
     )
     accepted = bool(v["decision"] == "accept")   # gate on this, surface v["reasons"]
 
@@ -42,6 +47,11 @@ DIFF_THRESH = 8         # per-pixel abs diff (0..255) counted as "changed" (~JND
 GLOBAL_COVERAGE = 0.55  # fraction of pixels changed above which an edit looks "global"
 GLOBAL_BBOX = 0.60      # change bounding-box covering more of the frame than this = "global"
 EPS = 1e-4
+OUTSIDE_MARGIN = 0.04   # grow the target box by this before measuring "the rest of the frame"
+# Floors for the rest of the frame, as after/before ratios. Below any of these, the edit
+# raised the score by degrading everything that isn't the brand. Calibrated on the
+# recorded edits in frontend/public/replay and results/ (see test_eval_guard.py).
+OUTSIDE_FLOORS = {"lum": 0.80, "contrast": 0.75, "color": 0.70, "detail": 0.70}
 
 
 def _gray(img: Image.Image, size=None) -> np.ndarray:
@@ -115,6 +125,58 @@ def perceptual_change(before: Image.Image, after: Image.Image) -> dict:
     }
 
 
+def _rgb(img: Image.Image, size) -> np.ndarray:
+    return np.asarray(img.convert("RGB").resize(size, Image.BILINEAR), dtype=np.float64)
+
+
+def _outside_mask(h: int, w: int, box, margin: float = OUTSIDE_MARGIN) -> np.ndarray:
+    """True outside the target box, grown by `margin` (fraction of the frame) on every side
+    so a legit edit that spills slightly past the box isn't counted as 'the rest'."""
+    x, y, bw, bh = box
+    x0, y0 = int(max(0.0, x - margin) * w), int(max(0.0, y - margin) * h)
+    x1, y1 = int(min(1.0, x + bw + margin) * w), int(min(1.0, y + bh + margin) * h)
+    m = np.ones((h, w), bool)
+    m[y0:y1, x0:x1] = False
+    return m
+
+
+def _stats(rgb: np.ndarray, mask: np.ndarray) -> dict:
+    lum = rgb @ np.array([0.299, 0.587, 0.114])
+    rg = rgb[..., 0] - rgb[..., 1]
+    yb = 0.5 * (rgb[..., 0] + rgb[..., 1]) - rgb[..., 2]
+    gy, gx = np.gradient(lum)
+    grad = np.hypot(gx, gy)
+    l, r, b = lum[mask], rg[mask], yb[mask]
+    return {
+        "lum": l.mean(),
+        "contrast": l.std(),
+        # Hasler & Suesstrunk colorfulness
+        "color": np.hypot(r.std(), b.std()) + 0.3 * np.hypot(r.mean(), b.mean()),
+        "detail": grad[mask].mean(),
+    }
+
+
+def outside_change(before: Image.Image, after: Image.Image, box) -> dict:
+    """How the rest of the frame (outside the target) changed, as after/before ratios of
+    mean luminance, luminance contrast, colorfulness and edge detail. A ratio well below
+    1 means the edit won by dimming, flattening, desaturating or blurring the scene."""
+    w, h = before.size
+    scale = min(1.0, MAX_SIDE / max(w, h))
+    size = (max(8, int(w * scale)), max(8, int(h * scale)))
+    a, b = _rgb(before, size), _rgb(after, size)
+    mask = _outside_mask(size[1], size[0], box)
+    if mask.mean() < 0.05:  # target fills the frame; nothing outside to judge
+        return {"lum": 1.0, "contrast": 1.0, "color": 1.0, "detail": 1.0}
+    sa, sb = _stats(a, mask), _stats(b, mask)
+    return {k: round(float((sb[k] + 1.0) / (sa[k] + 1.0)), 3) for k in sa}
+
+
+def degradation(oc: dict) -> list[str]:
+    """Which of the rest-of-frame signals fell past its floor."""
+    words = {"lum": "darkened", "contrast": "flattened", "color": "desaturated", "detail": "blurred"}
+    return [f"{words[k]} ({oc[k]:.2f}x)" for k, floor in OUTSIDE_FLOORS.items() if oc[k] < floor]
+
+
 def verdict(
     before: Image.Image,
     after: Image.Image,
@@ -126,10 +188,13 @@ def verdict(
     sal2_before: float | None = None,
     sal2_after: float | None = None,
     edit_is_semantic: bool = True,
+    target_box=None,
 ) -> dict:
     """Decide accept / reject / review for one edit. Gate `accepted` on decision == 'accept'.
 
     Priority of checks (reasons explain every outcome):
+      0. rest of frame degraded   -> reject  (score rose, but the frame outside the target got
+                                              darker / flatter / grayer / blurrier; needs `target_box`)
       1. imperceptible            -> reject (invisible tweak / adversarial)
       2. score didn't improve     -> reject
       3. suppression hack         -> reject  (share up but absolute target salience flat/down)
@@ -150,11 +215,17 @@ def verdict(
         == ((sal2_after - sal2_before) > 0)
     )
 
+    oc = outside_change(before, after, target_box) if target_box is not None else None
+
     def out(decision: str) -> dict:
-        return {"decision": decision, "reasons": reasons, **pc,
+        return {"decision": decision, "reasons": reasons, **pc, "outside": oc,
                 "ratio_gain": round(ratio_after - ratio_before, 4),
                 "abs_gain": round((target_sal_after - target_sal_before), 4) if have_abs else None}
 
+    # First, because SSIM runs on luminance and can't see a pure desaturation.
+    if ratio_gain and oc is not None and degradation(oc):
+        reasons.append("raised the score by degrading the rest of the frame: " + ", ".join(degradation(oc)))
+        return out("reject")
     if not pc["perceptible"]:
         reasons.append(f"change is imperceptible (ssim {pc['mean_ssim']}/{pc['p1_ssim']}) — likely reward-hack")
         return out("reject")
