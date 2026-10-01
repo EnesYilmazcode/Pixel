@@ -182,7 +182,7 @@ def _step_finalize(state: dict) -> dict:
             ratio_before=baseline, ratio_after=final,
             target_sal_before=before.get("target_salience"),
             target_sal_after=after.get("target_salience"),
-            edit_is_semantic=True,
+            edit_is_semantic=True, target_box=target,
         )
 
     steps = [

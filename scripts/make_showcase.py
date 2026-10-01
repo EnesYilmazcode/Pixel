@@ -23,7 +23,7 @@ from make_figures import (ACCENT, BG, DISPLAY, GOOD, INK, LINE, MONO, MONOB, MUT
 sys.path.insert(0, str(ROOT / "backend"))
 import deepgaze_runner as dg  # noqa: E402
 
-GIF_ORDER = ["nike", "the-ordinary", "red-bull", "coca-cola"]
+GIF_ORDER = ["nike", "spotify", "red-bull", "coca-cola"]
 
 
 def load_samples() -> list[dict]:
@@ -179,29 +179,30 @@ SHORT = [("SEVERAL", "several at once"), ("headline", "headline + CTA"),
          ("enlarge", "enlarge product"), ("reframe", "head-on reframe"), ("remove", "remove clutter")]
 
 
-def fig_every_edit(sample: str = "the-ordinary"):
-    """assets/media/every-edit.png - every Nano Banana edit from one captured run,
-    each re-scored by DeepGaze against the same fixed brand box."""
-    run_dir = ROOT / "results" / sample
-    if not (run_dir / "run.json").exists():
-        print("every-edit.png skipped: run scripts/capture_run.py first")
-        return
+def fig_every_edit(sample: str = "red-bull"):
+    """assets/media/every-edit.png - every Nano Banana edit from one recorded optimizer run
+    (frontend/public/replay, made by scripts/record_demo.py), with the scores DeepGaze gave
+    each one against the same fixed brand box."""
     import json
-    run = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-    box = run["box"]
-    base = run["base"]["prom"]
+    run_dir = ROOT / "frontend" / "public" / "replay" / sample
+    if not (run_dir / "steps.json").exists():
+        print("every-edit.png skipped: run scripts/record_demo.py first")
+        return
+    steps = json.loads((run_dir / "steps.json").read_text(encoding="utf-8"))
+    box = next(s["box"] for s in load_samples() if s["id"] == sample)
+    base = steps[0]["current_score"]
     tiles = [("original", Image.open(SAMPLES / (sample + ".jpg")).convert("RGB"), base)]
-    for e in run["edits"]:
-        label = next((v for k, v in SHORT if k in e["directive"]), e["directive"][:24])
-        tiles.append((label, Image.open(run_dir / "edit{}.jpg".format(e["k"])).convert("RGB"), e["prom"]))
+    for k, e in enumerate(steps):
+        label = next((v for key, v in SHORT if key in e["directive"]), e["directive"][:24])
+        tiles.append((label, Image.open(run_dir / "step{}.jpg".format(k)).convert("RGB"), e["new_score"]))
 
     TW, TH, GAP, M, SS = 220, 330, 18, 50, 2
     W = M * 2 + len(tiles) * TW + (len(tiles) - 1) * GAP
     H = 150 + TH + 110
     canvas = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(canvas)
-    d.text((M, 42), "Five real edits, all scored lower", font=DISPLAY(36), fill=INK)
-    d.text((M, 94), "The Ordinary sample, one live run. Each edit is scored against the same "
+    d.text((M, 42), "{} real edits, all scored lower".format(len(tiles) - 1), font=DISPLAY(36), fill=INK)
+    d.text((M, 94), "Red Bull sample, one recorded run. Each edit is scored against the same "
                     "brand box. None beat the original, so Pixel kept it.", font=SERIF(19), fill=MUTED)
     for i, (label, img, prom) in enumerate(tiles):
         x0, y0 = M + i * (TW + GAP), 150

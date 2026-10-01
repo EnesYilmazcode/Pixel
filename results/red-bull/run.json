@@ -1,0 +1,54 @@
+{
+ "sample": "red-bull",
+ "brand": "Red Bull",
+ "box": [
+  0.34,
+  0.28,
+  0.26,
+  0.5
+ ],
+ "base": {
+  "prom": 0.79,
+  "abs": 0.4909
+ },
+ "edits": [
+  {
+   "k": 1,
+   "directive": "remove the black phone, the computer mouse, the keyboard and the drawing tablet from the desk so only the Red Bull can stands on the clean wooden desk. Do not add any text, headline or button. Keep the lighting, colors, camera angle and the can exactly the same",
+   "prom": 0.819,
+   "abs": 0.5906,
+   "judge": 0.6,
+   "judge_reason": "The ad creative is of good quality photographically \u2013 the lighting is pleasant, the product is in focus, and the setting (wooden desk, iMac) is relatable for a productivity scenario. However, its brand-fit for Red Bull is only moderate. While Red Bull is certainly consumed for focus and energy during work or study, this image lacks the dynamic, high-energy, or extreme elements that are central to Red Bull's core 'gives you wings' branding. It's a bit too static and generic, not capturing the aspirational, adventurous, or 'pushing limits' spirit usually associated with Red Bull campaigns. It *could* run as a highly targeted social media ad for productivity, but it wouldn't be a strong hero image for a major campaign, as it doesn't fully leverage Red Bull's distinctive brand identity.",
+   "guard": "accept",
+   "guard_reasons": [
+    "perceptible, localized/justified, and target salience improved"
+   ],
+   "outside": {
+    "lum": 0.995,
+    "contrast": 0.884,
+    "color": 0.978,
+    "detail": 0.906
+   },
+   "kept": true
+  },
+  {
+   "k": 2,
+   "directive": "make the Red Bull can slightly larger and its logo crisper and more vivid. Do not add any text, headline or button. Keep the desk, the lighting and everything else exactly as it is",
+   "prom": 0.7898,
+   "abs": 0.4905,
+   "judge": 0.9,
+   "judge_reason": "The ad creative is of high quality, featuring clear focus on the product, good lighting, and a clean composition. It has excellent brand-fit for Red Bull, portraying a common scenario where the drink is consumed for productivity or focus in a creative/work environment (e.g., with an iMac, graphics tablet). This aligns well with Red Bull's broader messaging beyond extreme sports, targeting students, creatives, and professionals who need an energy boost. It would absolutely run as a real ad, especially for digital or social media campaigns focused on daily energy and concentration.",
+   "guard": "reject",
+   "guard_reasons": [
+    "attention score did not improve"
+   ],
+   "outside": {
+    "lum": 0.995,
+    "contrast": 0.935,
+    "color": 0.97,
+    "detail": 0.929
+   },
+   "kept": false
+  }
+ ]
+}

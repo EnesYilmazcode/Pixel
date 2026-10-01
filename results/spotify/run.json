@@ -1,0 +1,35 @@
+{
+ "sample": "spotify",
+ "brand": "Spotify",
+ "box": [
+  0.32,
+  0.28,
+  0.4,
+  0.5
+ ],
+ "base": {
+  "prom": 0.7596,
+  "abs": 0.6324
+ },
+ "edits": [
+  {
+   "k": 1,
+   "directive": "make the green Spotify logo on the phone screen about twice as large and brighter, centered on the screen. Do not add any text. Keep the hand, the phone and the background exactly as they are",
+   "prom": 0.7587,
+   "abs": 0.6292,
+   "judge": 0.9,
+   "judge_reason": "This creative is high quality and has excellent brand-fit for Spotify. The image is clear, well-composed, and features the prominent Spotify logo on a smartphone, which is the primary consumption method for the service. The casual, natural setting (person holding phone outdoors) aligns perfectly with Spotify's brand image of being integrated into daily life. It's a straightforward and effective brand recognition ad that would absolutely run as a real ad, likely for app installs or general brand awareness campaigns. The only minor point preventing a perfect score is that it's a very standard creative approach, not particularly innovative, but highly effective nonetheless.",
+   "guard": "reject",
+   "guard_reasons": [
+    "attention score did not improve"
+   ],
+   "outside": {
+    "lum": 0.962,
+    "contrast": 0.964,
+    "color": 0.973,
+    "detail": 0.96
+   },
+   "kept": false
+  }
+ ]
+}

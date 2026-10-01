@@ -1,0 +1,35 @@
+{
+ "sample": "nike",
+ "brand": "Nike",
+ "box": [
+  0.3,
+  0.18,
+  0.45,
+  0.3
+ ],
+ "base": {
+  "prom": 0.5922,
+  "abs": 0.196
+ },
+ "edits": [
+  {
+   "k": 1,
+   "directive": "make the Nike billboard look like a freshly lit, vivid display: brighter and crisper image of the player, cleaner and sharper. Do not add any text. Do not change anything outside the billboard",
+   "prom": 0.5263,
+   "abs": 0.1499,
+   "judge": 1.0,
+   "judge_reason": "This Nike ad creative is exceptionally high quality and an excellent fit for the brand. It features a recognizable elite athlete (Odell Beckham Jr.) in a dynamic, impactful pose, rendered in a classic black and white style that emphasizes raw athleticism and determination. The iconic 'Just do it.' tagline perfectly complements the image, reinforcing Nike's core message of inspiration and action. This is quintessential Nike advertising \u2013 powerful imagery, celebrity athlete endorsement, and strong brand messaging. It absolutely would run as a real ad, and likely has, given its classic and effective design.",
+   "guard": "reject",
+   "guard_reasons": [
+    "attention score did not improve"
+   ],
+   "outside": {
+    "lum": 1.076,
+    "contrast": 0.98,
+    "color": 0.856,
+    "detail": 1.006
+   },
+   "kept": false
+  }
+ ]
+}

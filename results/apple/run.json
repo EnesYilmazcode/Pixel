@@ -1,0 +1,35 @@
+{
+ "sample": "apple",
+ "brand": "Apple",
+ "box": [
+  0.32,
+  0.2,
+  0.36,
+  0.62
+ ],
+ "base": {
+  "prom": 0.7581,
+  "abs": 0.6983
+ },
+ "edits": [
+  {
+   "k": 1,
+   "directive": "remove the open hand and the wristwatch from the bottom of the photo, filling that area with the same blurred lakeside background. Do not add any text. Keep the iPhone, the lake, the colors and the lighting exactly as they are",
+   "prom": 0.7764,
+   "abs": 0.7737,
+   "judge": 0.7,
+   "judge_reason": "The creative exhibits high image quality and a visually appealing 'floating' effect, which aligns with Apple's aesthetic of sleekness, premium design, and advanced technology. The iPhone X is clearly the focus. While the composition is clean and product-centric, the background is somewhat muted and less aspirational or iconic than what Apple often features in its primary ad campaigns, which tend to use more vibrant or carefully curated environments to tell a story or evoke a specific emotion. Showing a generic home screen also means it doesn't highlight a specific feature or compelling content, which Apple frequently does. It could certainly be used as effective supplementary marketing material, social media content, or as part of a broader campaign, but is slightly less likely to be a standalone hero ad.",
+   "guard": "accept",
+   "guard_reasons": [
+    "perceptible, localized/justified, and target salience improved"
+   ],
+   "outside": {
+    "lum": 0.946,
+    "contrast": 0.923,
+    "color": 0.926,
+    "detail": 0.942
+   },
+   "kept": true
+  }
+ ]
+}

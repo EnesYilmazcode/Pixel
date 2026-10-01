@@ -136,12 +136,13 @@ async def optimize_step(image: UploadFile = File(...), brand: str = Form("the br
     vetoed = quality < gemini.settings.judge_gate
 
     # Reward-hack guard: a perceptible, localized edit whose ABSOLUTE on-target salience
-    # rose — not a suppression cheat (share up, target salience flat) or an invisible tweak.
+    # rose — not a suppression cheat (share up, target salience flat), an invisible tweak,
+    # or a win bought by darkening, desaturating or blurring the rest of the frame.
     guard = eval_guard.verdict(
         img, variant,
         ratio_before=current, ratio_after=new_score,
         target_sal_before=abs_before, target_sal_after=abs_after,
-        edit_is_semantic=really_edited,
+        edit_is_semantic=really_edited, target_box=tbox,
     )
     accepted = guard["decision"] == "accept"
     return {

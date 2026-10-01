@@ -1,6 +1,6 @@
 """Run the real optimizer on one sample ad and keep every edit it tried.
 
-    python scripts/capture_run.py the-ordinary "The Ordinary"
+    python scripts/capture_run.py red-bull "Red Bull"
 
 Needs GEMINI_API_KEY and the backend deps. Writes results/<sample>/edit<k>.jpg for each
 Nano Banana edit and results/<sample>/run.json with each edit's directive, its

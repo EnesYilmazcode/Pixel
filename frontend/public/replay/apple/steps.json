@@ -51,9 +51,9 @@
   "judge": 0.3,
   "judge_reason": "This creative attempts to capture Apple's focus on user experience, using a clean font and the iconic logo. However, several factors make it unlikely to run as a real Apple ad: \n1. **Outdated Product:** The ad features an iPhone X, which is an older model. Apple typically highlights its latest products in primary ad campaigns.\n2. **Quality & Polish:** The 'floating' effect and the glow around the phone appear somewhat amateurish and not seamlessly integrated. Apple ads are known for their extremely high production value, precision, and minimalist perfection, which this creative doesn't quite achieve.\n3. **Generic Message:** While 'EXPERIENCE' is a core tenet of Apple's brand, a single, broad word like this is often too generic for a standalone ad creative. Apple usually pairs its general ethos with specific features, innovations, or emotional benefits ('Privacy. That's iPhone,' 'Shot on iPhone,' 'The new way to interact with your phone').\n4. **Background:** The blurred background, while aiming for a lifestyle feel, lacks the distinctive or aspirational quality typical of Apple's curated environmental shots or their signature clean, often studio-like aesthetic.\n5. **Brand Fit (Aesthetics):** While the Apple logo and text font are on-brand, the overall execution lacks the sophisticated, premium feel Apple meticulously maintains in its advertising.",
   "vetoed": true,
-  "guard": "accept",
+  "guard": "reject",
   "guard_reasons": [
-   "perceptible, localized/justified, and target salience improved"
+   "raised the score by degrading the rest of the frame: darkened (0.68x), flattened (0.59x), desaturated (0.50x)"
   ],
   "improved": false,
   "n_directives": 8,
@@ -71,11 +71,11 @@
   "judge": 0.9,
   "judge_reason": "This creative demonstrates strong brand-fit for Apple. The minimalist aesthetic, featuring a clean product shot against a plain background, is a hallmark of Apple's advertising. The typography is simple and elegant, and the concise tagline 'CAPTURE THE MOMENT' directly highlights a key iPhone feature (the camera) and a core user benefit, aligning perfectly with Apple's benefit-driven messaging. While the phone is an older model (iPhone X/XS era), if evaluated within its historical context, the quality of the image and the clarity of the text are high. It's a straightforward, effective, and visually consistent ad that Apple would very likely run to promote the iPhone's camera capabilities.",
   "vetoed": false,
-  "guard": "accept",
+  "guard": "reject",
   "guard_reasons": [
-   "perceptible, localized/justified, and target salience improved"
+   "raised the score by degrading the rest of the frame: flattened (0.55x), desaturated (0.30x), blurred (0.49x)"
   ],
-  "improved": true,
+  "improved": false,
   "n_directives": 8,
   "variant_heatmap": "replay/apple/step3-heat.png"
  }
