@@ -2,6 +2,10 @@
 // Per-endpoint mock flags: /predict is live (real DeepGaze backend), /agents is
 // mocked until the competitive.py:55 brief["tone"] list/str bug is fixed (it 500s).
 import mock from "./mock.json";
+import * as replay from "./replay";
+
+// Static web demo: no backend, every call is answered from a recorded real run.
+export const DEMO = import.meta.env.MODE === "demo";
 
 export const USE_MOCK_PREDICT = false; // real DeepGaze via Vite proxy → :8000
 export const USE_MOCK_AGENTS = false;  // live /agents (the 500 bug is fixed; real Judge-gated loop)
@@ -9,6 +13,13 @@ export const USE_MOCK = USE_MOCK_PREDICT && USE_MOCK_AGENTS;
 export const MODE_LABEL = USE_MOCK_PREDICT
   ? "Mock data"
   : USE_MOCK_AGENTS ? "Live gaze · mock optimize" : "Live";
+
+// A score change in points, signed. Small moves keep a decimal so 59 -> 60 never reads "+0".
+export function fmtPts(d: number): string {
+  const v = d * 100;
+  const s = Math.abs(v) < 1 ? v.toFixed(1) : String(Math.round(v));
+  return (v >= 0 ? "+" : "") + s;
+}
 
 export type Box = [number, number, number, number]; // normalized x,y,w,h
 export type Distractor = { region: Box; share: number; desc: string };
@@ -41,6 +52,7 @@ export type TreeNode = {
   directive: string;       // the Nano Banana edit prompt for this node
   image?: string;          // this variant's image (data URL) — present in real/captured runs
   heatmap?: string;        // this variant's attention heatmap (data URL)
+  note?: string;           // why a branch was not adopted (Judge veto, guard verdict)
 };
 export type AgentsResult = {
   tree?: TreeNode[];
@@ -56,7 +68,8 @@ export type AgentsResult = {
   iterations: AgentStep[];
 };
 
-export async function predict(file: File, target?: Box): Promise<PredictResult> {
+export async function predict(file: File, target?: Box, sample?: string): Promise<PredictResult> {
+  if (DEMO) return replay.predict(sample ?? file.name.replace(/\.\w+$/, ""));
   if (USE_MOCK_PREDICT) return mock.predict as PredictResult;
   const fd = new FormData();
   fd.append("image", file);
@@ -83,6 +96,7 @@ export type StepResult = {
   guard_reasons: string[];   // why the guard reached that verdict
   improved: boolean;         // honest: rose AND not vetoed AND guard accepted (real on-target gain)
   n_directives: number;
+  variant_heatmap?: string;  // attention heatmap of the edit (recorded runs only)
 };
 
 // Honest capability report driving the LIVE/DEMO badge.
@@ -97,14 +111,19 @@ export type Health = {
 };
 
 export async function health(): Promise<Health> {
+  if (DEMO) return replay.health();
   const r = await fetch("/health");
   if (!r.ok) throw new Error(`/health ${r.status}`);
   return r.json();
 }
 
 export async function optimizeStep(
-  image: File, brand: string, step: number, target?: Box, hint?: string,
+  image: File, brand: string, step: number, target?: Box, hint?: string, sample?: string,
 ): Promise<StepResult> {
+  if (DEMO) {
+    if (!sample) throw new Error("The demo replays the sample ads only");
+    return replay.optimizeStep(sample, step);
+  }
   const fd = new FormData();
   fd.append("image", image);            // the current best creative (original on step 0)
   fd.append("brand", brand);
