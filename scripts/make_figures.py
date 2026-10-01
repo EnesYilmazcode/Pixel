@@ -2,8 +2,8 @@
 
     python scripts/make_figures.py
 
-Reads the captured winning run in frontend/public/precomputed/nike.json, re-scores
-the before and after with the CURRENT scorer, and writes assets/media/hero-before-after.png.
+Reads the live Red Bull edit saved by scripts/try_edits.py in results/red-bull/, re-scores
+the before and after with the CURRENT scorer and guard, and writes assets/media/hero-before-after.png.
 The shared drawing helpers here are also used by make_showcase.py. Every number printed on a figure is measured at build
 time, so a figure can never drift away from the code that produced it.
 
@@ -24,14 +24,14 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "assets" / "media"
-RUN = ROOT / "frontend" / "public" / "precomputed" / "nike.json"
 SAMPLES = ROOT / "frontend" / "public" / "samples"
+WIN_SAMPLE, WIN_EDIT = "red-bull", ROOT / "results" / "red-bull" / "edit1.jpg"
 
 # App palette (frontend/src/index.css :root)
 BG, INK, MUTED, LINE = "#faf7f1", "#1b1813", "#8a8478", "#ebe4d6"
 ACCENT, ACCENT_INK, GOOD, GOOD_WASH, PANEL = "#ee3d23", "#c22d16", "#0e9f6e", "#e6f6ef", "#ffffff"
 
-NIKE_BOX = [0.3, 0.18, 0.45, 0.3]  # frontend/src/samples.ts
+WIN_BOX = [0.34, 0.28, 0.26, 0.5]  # Red Bull target box, frontend/src/samples.ts
 
 
 def font(name: str, size: int):
@@ -63,8 +63,9 @@ def SANSB(s):
     return font("calibrib.ttf", s)
 
 
-def load_run() -> dict:
-    return json.loads(RUN.read_text(encoding="utf-8"))
+def load_pair() -> tuple[Image.Image, Image.Image]:
+    before = Image.open(SAMPLES / (WIN_SAMPLE + ".jpg")).convert("RGB")
+    return before, Image.open(WIN_EDIT).convert("RGB").resize(before.size, Image.LANCZOS)
 
 
 def data_url_image(url: str) -> Image.Image:
@@ -110,18 +111,17 @@ def overlay_heat(img: Image.Image, density: np.ndarray) -> Image.Image:
 
 
 def fig_hero(scores: dict | None, dens: dict | None = None):
-    """assets/media/hero-before-after.png - the captured winning run, re-scored today.
+    """assets/media/hero-before-after.png - the honest Red Bull win, re-scored today.
     With densities, each pane carries its DeepGaze heat layer so the move is visible."""
-    run = load_run()
-    before, after = data_url_image(run["original_png"]), data_url_image(run["variant_png"])
+    before, after = load_pair()
     PW, PH = 620, 930
     W, H = 1440, 1330 if scores else 1190
     canvas = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(canvas)
 
-    d.text((60, 52), "One campaign, one branch of the search", font=DISPLAY(38), fill=INK)
-    d.text((60, 106), "Nike billboard with DeepGaze attention on top. Before, the strongest pull is the "
-                      "Subway sign. After the edit, it moves up onto the player.", font=SERIF(21), fill=MUTED)
+    d.text((60, 52), "One edit that worked", font=DISPLAY(38), fill=INK)
+    d.text((60, 106), "Red Bull with DeepGaze attention on top. The edit takes the phone, mouse, keyboard "
+                      "and tablet off the desk and leaves the can and the light alone.", font=SERIF(21), fill=MUTED)
 
     y0 = 172
     for i, (label, img) in enumerate((("BEFORE", before), ("AFTER", after))):
@@ -169,17 +169,17 @@ def main():
     sys.path.insert(0, str(ROOT / "backend"))
     import deepgaze_runner as dg
     import eval_guard
-    run = load_run()
+    pair = dict(zip(("before", "after"), load_pair()))
     scores, dens = {}, {}
-    for k, key in (("before", "original_png"), ("after", "variant_png")):
-        img = data_url_image(run[key])
-        prom, abs_ = dg.score_components(img, NIKE_BOX)
+    for k, img in pair.items():
+        prom, abs_ = dg.score_components(img, WIN_BOX)
         scores[k] = {"prom": prom, "abs": abs_}
         dens[k] = dg._density(np.asarray(img))
         print("  re-scored {}: prominence={} on-target salience={}".format(k, prom, abs_))
-    g = eval_guard.verdict(data_url_image(run["original_png"]), data_url_image(run["variant_png"]),
+    g = eval_guard.verdict(pair["before"], pair["after"],
                            ratio_before=scores["before"]["prom"], ratio_after=scores["after"]["prom"],
-                           target_sal_before=scores["before"]["abs"], target_sal_after=scores["after"]["abs"])
+                           target_sal_before=scores["before"]["abs"], target_sal_after=scores["after"]["abs"],
+                           target_box=WIN_BOX)
     scores["guard"] = g["decision"]
     print("  guard:", g["decision"], g["reasons"])
     fig_hero(scores, dens)
