@@ -1,0 +1,51 @@
+{
+ "width": 1200,
+ "height": 1800,
+ "attention_score": 0.7595,
+ "heatmap_png": "replay/the-ordinary/heat.png",
+ "target_box": [
+  0.29,
+  0.44,
+  0.3,
+  0.26
+ ],
+ "scanpath": [
+  {
+   "x": 0.548,
+   "y": 0.391,
+   "order": 1
+  },
+  {
+   "x": 0.317,
+   "y": 0.479,
+   "order": 2
+  },
+  {
+   "x": 0.532,
+   "y": 0.595,
+   "order": 3
+  },
+  {
+   "x": 0.635,
+   "y": 0.999,
+   "order": 4
+  },
+  {
+   "x": 0.34,
+   "y": 0.998,
+   "order": 5
+  }
+ ],
+ "distractors": [
+  {
+   "region": [
+    0.4484,
+    0.2906,
+    0.2,
+    0.2
+   ],
+   "share": 0.537,
+   "desc": "Smiling woman's face"
+  }
+ ]
+}

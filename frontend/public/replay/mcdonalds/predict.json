@@ -1,0 +1,40 @@
+{
+ "width": 1600,
+ "height": 1600,
+ "attention_score": 0.8383,
+ "heatmap_png": "replay/mcdonalds/heat.png",
+ "target_box": [
+  0.26,
+  0.31,
+  0.52,
+  0.33
+ ],
+ "scanpath": [
+  {
+   "x": 0.354,
+   "y": 0.557,
+   "order": 1
+  },
+  {
+   "x": 0.618,
+   "y": 0.551,
+   "order": 2
+  },
+  {
+   "x": 0.512,
+   "y": 0.551,
+   "order": 3
+  },
+  {
+   "x": 0.724,
+   "y": 0.547,
+   "order": 4
+  },
+  {
+   "x": 0.458,
+   "y": 0.355,
+   "order": 5
+  }
+ ],
+ "distractors": []
+}

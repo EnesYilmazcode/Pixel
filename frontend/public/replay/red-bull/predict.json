@@ -1,0 +1,61 @@
+{
+ "width": 1600,
+ "height": 2400,
+ "attention_score": 0.79,
+ "heatmap_png": "replay/red-bull/heat.png",
+ "target_box": [
+  0.34,
+  0.28,
+  0.26,
+  0.5
+ ],
+ "scanpath": [
+  {
+   "x": 0.516,
+   "y": 0.521,
+   "order": 1
+  },
+  {
+   "x": 0.538,
+   "y": 0.357,
+   "order": 2
+  },
+  {
+   "x": 0.529,
+   "y": 0.927,
+   "order": 3
+  },
+  {
+   "x": 0.182,
+   "y": 0.408,
+   "order": 4
+  },
+  {
+   "x": 0.214,
+   "y": 0.712,
+   "order": 5
+  }
+ ],
+ "distractors": [
+  {
+   "region": [
+    0.4293,
+    0.8268,
+    0.2,
+    0.2
+   ],
+   "share": 0.094,
+   "desc": "White phone back"
+  },
+  {
+   "region": [
+    0.1082,
+    0.6158,
+    0.2,
+    0.2
+   ],
+   "share": 0.055,
+   "desc": "Smartphone screen"
+  }
+ ]
+}

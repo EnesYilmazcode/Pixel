@@ -1,0 +1,51 @@
+{
+ "width": 1600,
+ "height": 2400,
+ "attention_score": 0.7596,
+ "heatmap_png": "replay/spotify/heat.png",
+ "target_box": [
+  0.32,
+  0.28,
+  0.4,
+  0.5
+ ],
+ "scanpath": [
+  {
+   "x": 0.378,
+   "y": 0.52,
+   "order": 1
+  },
+  {
+   "x": 0.208,
+   "y": 0.911,
+   "order": 2
+  },
+  {
+   "x": 0.217,
+   "y": 0.041,
+   "order": 3
+  },
+  {
+   "x": 0.235,
+   "y": 0.729,
+   "order": 4
+  },
+  {
+   "x": 0.767,
+   "y": 0.812,
+   "order": 5
+  }
+ ],
+ "distractors": [
+  {
+   "region": [
+    0.1082,
+    0.8111,
+    0.2,
+    0.2
+   ],
+   "share": 0.115,
+   "desc": "Human hand"
+  }
+ ]
+}

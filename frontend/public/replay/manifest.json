@@ -1,0 +1,15 @@
+{
+ "recorded": "2026-10-01",
+ "engine": "deepgaze-iie",
+ "device": "cuda",
+ "samples": [
+  "apple",
+  "coca-cola",
+  "mcdonalds",
+  "nike",
+  "pepsi",
+  "red-bull",
+  "spotify",
+  "the-ordinary"
+ ]
+}

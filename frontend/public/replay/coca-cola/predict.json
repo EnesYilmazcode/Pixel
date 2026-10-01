@@ -1,0 +1,61 @@
+{
+ "width": 1600,
+ "height": 2000,
+ "attention_score": 0.8026,
+ "heatmap_png": "replay/coca-cola/heat.png",
+ "target_box": [
+  0.33,
+  0.28,
+  0.33,
+  0.64
+ ],
+ "scanpath": [
+  {
+   "x": 0.429,
+   "y": 0.605,
+   "order": 1
+  },
+  {
+   "x": 0.532,
+   "y": 0.426,
+   "order": 2
+  },
+  {
+   "x": 0.496,
+   "y": 0.767,
+   "order": 3
+  },
+  {
+   "x": 0.53,
+   "y": 0.999,
+   "order": 4
+  },
+  {
+   "x": 0.495,
+   "y": 0.318,
+   "order": 5
+  }
+ ],
+ "distractors": [
+  {
+   "region": [
+    0.4299,
+    0.899,
+    0.2,
+    0.2
+   ],
+   "share": 0.073,
+   "desc": "Wet soda can top"
+  },
+  {
+   "region": [
+    0.4397,
+    0.8346,
+    0.2,
+    0.2
+   ],
+   "share": 0.11,
+   "desc": "Wet soda can body"
+  }
+ ]
+}
