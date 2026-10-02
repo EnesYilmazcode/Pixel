@@ -4,6 +4,7 @@
     python scripts/record_demo.py nike apple      # just these (re-records them)
     python scripts/record_demo.py --rejudge       # re-run the current guard on saved runs
     python scripts/record_demo.py nike --steps=3  # fewer branches, to save image edits
+    python scripts/record_demo.py nike --resume=3 # keep 3 recorded steps, redo the rest
 
 Calls the real FastAPI app in-process, the same way the frontend does: /predict on the
 sample, then /optimize/step a few times, re-sending the current best creative after each
@@ -57,7 +58,7 @@ def save_jpg(raw: bytes, path: Path, max_side: int) -> None:
     img.save(path, quality=84, optimize=True, progressive=True)
 
 
-def record(client: TestClient, s: dict) -> None:
+def record(client: TestClient, s: dict, resume: int = 0) -> None:
     sid, box = s["id"], json.dumps(s["box"])
     out = OUT / sid
     out.mkdir(parents=True, exist_ok=True)
@@ -80,7 +81,13 @@ def record(client: TestClient, s: dict) -> None:
                                                     pred["distractors"][0]["desc"] if pred["distractors"] else "-"))
 
     best, best_score, steps = src, pred["attention_score"], []
-    for k in range(STEPS):
+    if resume:  # keep the first `resume` recorded steps and continue from their best image
+        steps = json.loads((out / "steps.json").read_text(encoding="utf-8"))[:resume]
+        for k, res in enumerate(steps):
+            if res["improved"] and res["new_score"] > best_score:
+                # the saved display copy; DeepGaze scores at 1024 px either way
+                best, best_score = (out / "step{}.jpg".format(k)).read_bytes(), res["new_score"]
+    for k in range(len(steps), STEPS):
         t = time.time()
         r = client.post("/optimize/step", files={"image": ("best.png", best, "image/png")},
                         data={"brand": s["brand"], "target": box, "step": str(k),
@@ -139,7 +146,8 @@ def main_() -> None:
                 rejudge(s)
         return
     global STEPS
-    args = [a for a in sys.argv[1:] if not a.startswith("--steps=")]
+    args = [a for a in sys.argv[1:] if not a.startswith(("--steps=", "--resume="))]
+    resume = next((int(a.split("=")[1]) for a in sys.argv[1:] if a.startswith("--resume=")), 0)
     STEPS = next((int(a.split("=")[1]) for a in sys.argv[1:] if a.startswith("--steps=")), STEPS)
     want = args
     client = TestClient(main.app)
@@ -149,7 +157,7 @@ def main_() -> None:
                 continue
             if not want and (OUT / s["id"] / "steps.json").exists():
                 continue
-            record(client, s)
+            record(client, s, resume)
     rec = sorted(p.name for p in OUT.iterdir() if (p / "steps.json").exists())
     (OUT / "manifest.json").write_text(json.dumps(
         {"recorded": date.today().isoformat(), "engine": "deepgaze-iie", "device": dg.device_name(),
