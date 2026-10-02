@@ -5,6 +5,7 @@ Run:  uvicorn main:app --reload --port 8000   (from backend/)
 from __future__ import annotations
 
 import base64
+import hashlib
 import io
 import json
 from contextlib import asynccontextmanager
@@ -92,6 +93,21 @@ async def run_agents(image: UploadFile = File(...), brand: str = Form("the brand
     return agents.run(await _image(image), brand, box)
 
 
+# Gemini names the same thief differently on each call ("white phone back", "back of
+# phone"), so an unchanged image kept retrying the same removal under a new name. Names
+# are cached per image and region, which keeps the "tried" list meaningful.
+_LABELS: dict[tuple, list[str]] = {}
+
+
+def _label_once(img: Image.Image, distractors: list[dict]) -> None:
+    key = (hashlib.md5(img.tobytes()).hexdigest(), tuple(tuple(d["region"]) for d in distractors))
+    if key not in _LABELS:
+        gemini.label_distractors(img, distractors)
+        _LABELS[key] = [d["desc"] for d in distractors]
+    for d, name in zip(distractors, _LABELS[key]):
+        d["desc"] = name
+
+
 @app.post("/optimize/step")
 async def optimize_step(image: UploadFile = File(...), brand: str = Form("the brand"),
                         target: str | None = Form(None), step: int = Form(0),
@@ -104,7 +120,7 @@ async def optimize_step(image: UploadFile = File(...), brand: str = Form("the br
     img = await _image(image)
     box = json.loads(target) if target else None
     before = dg.predict(img, box, n_thieves=3)
-    gemini.label_distractors(img, before["distractors"])  # branches name what to remove
+    _label_once(img, before["distractors"])  # branches name what to remove
     tbox = box or before["target_box"]
     current = before["attention_score"]
     abs_before = before["target_salience"]
