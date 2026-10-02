@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
-from scipy.ndimage import binary_dilation, binary_fill_holes, binary_opening, gaussian_filter
+from scipy.ndimage import binary_opening, find_objects, gaussian_filter, label
 
 REG_SIDE = 512      # register at this resolution
 MAX_SHIFT = 0.05    # ignore a "registration" bigger than this fraction of the frame
@@ -20,6 +20,7 @@ GROW = 0.04         # grow the branch region by this fraction of the frame
 NEAR = 0.08         # a changed pixel counts only within this distance of the branch region
 DIFF_SIDE = 256     # resolution of the change map
 DIFF_THRESH = 24    # mean RGB difference (0..255) that counts as a real change
+BLOB_PAD = 0.015    # grow each changed blob's box by this fraction of the frame
 FEATHER = 0.012     # feather radius, fraction of the long side
 
 
@@ -78,13 +79,24 @@ def change_mask(orig: Image.Image, edited: Image.Image, near, protect=None) -> I
     b = np.asarray(edited.convert("RGB").resize(size, Image.BILINEAR), np.float64)
     m = gaussian_filter(np.abs(a - b).mean(2), 1.5) > DIFF_THRESH
     m = binary_opening(m, iterations=1)
-    m = binary_fill_holes(binary_dilation(m, iterations=3))
     allow = np.asarray(region_mask(size, near, grow=NEAR, feather=0)) > 0
     if protect:
         allow &= ~(np.asarray(region_mask(size, protect, grow=0.0, feather=0)) > 0)
     m &= allow
-    mi = Image.fromarray((m * 255).astype(np.uint8)).resize((w, h), Image.BILINEAR)
-    return mi.filter(ImageFilter.GaussianBlur(FEATHER * max(w, h)))
+    # A removed object's faint parts (a phone's edge over a keyboard, the thin strokes of a
+    # sign) fall under the threshold and came back as ghosts. So every changed blob is
+    # replaced by its whole bounding box, grown a little, before feathering.
+    labels, n = label(m)
+    full = np.zeros_like(m)
+    pad = max(2, int(BLOB_PAD * max(size)))
+    for sl in find_objects(labels):
+        if sl is None:
+            continue
+        ys, xs = sl
+        full[max(0, ys.start - pad):ys.stop + pad, max(0, xs.start - pad):xs.stop + pad] = True
+    full &= allow
+    mi = Image.fromarray((full * 255).astype(np.uint8)).resize((w, h), Image.BILINEAR)
+    return mi.filter(ImageFilter.GaussianBlur(FEATHER * 0.5 * max(w, h)))
 
 
 def keep_changes(orig: Image.Image, edited: Image.Image, near, protect=None) -> Image.Image:
