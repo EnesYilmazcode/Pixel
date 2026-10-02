@@ -252,7 +252,7 @@ def _scanpath(density: np.ndarray, n: int = 5, sigma_frac: float = 0.08) -> list
     return out
 
 
-def predict(image: Image.Image, target_box: Box | None = None) -> dict:
+def predict(image: Image.Image, target_box: Box | None = None, n_thieves: int = 2) -> dict:
     """Full /predict payload for one image. `attention_score` is the size-invariant
     prominence; `target_salience` is the absolute attention mass on target (used by the
     reward-hack guard to tell a real improvement from 'suppress everything else')."""
@@ -268,7 +268,7 @@ def predict(image: Image.Image, target_box: Box | None = None) -> dict:
         "heatmap_png": _heatmap_data_url(density),
         "target_box": [round(v, 4) for v in target],
         "scanpath": _scanpath(density),
-        "distractors": _top_distractors(density, target),
+        "distractors": _top_distractors(density, target, k=n_thieves),
         "engine": _engine,
     }
 

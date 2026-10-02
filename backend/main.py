@@ -92,43 +92,32 @@ async def run_agents(image: UploadFile = File(...), brand: str = Form("the brand
     return agents.run(await _image(image), brand, box)
 
 
-def _stepwise_order(pool: list[str]) -> list[str]:
-    """Rank directives so the first branches are the most reliable attention-raisers.
-    0 = amplify the brand (enlarge/brighten/add CTA), 1 = neutral, 2 = risky/structural."""
-    def rank(d: str) -> int:
-        head = d.lower().lstrip()  # rank by the leading verb, not mid-sentence words
-        if head.startswith(("add", "enlarge", "clearly enlarge", "boost", "make", "brighten")):
-            return 0  # amplify the brand — most reliable lift
-        if head.startswith(("remove", "reframe", "recolor", "clearly tone", "tone")):
-            return 2  # structural / risky — can regress, try later
-        return 1
-    return sorted(pool, key=rank)
-
-
 @app.post("/optimize/step")
 async def optimize_step(image: UploadFile = File(...), brand: str = Form("the brand"),
                         target: str | None = Form(None), step: int = Form(0),
-                        hint: str = Form("")) -> dict:
+                        hint: str = Form(""), tried: str = Form("[]")) -> dict:
     """One branch at a time. `image` is the CURRENT best creative (the original on step 0);
     the frontend re-sends the adopted winner each step. We run a single Nano Banana edit
     (next directive in the pool), re-score with DeepGaze, and Judge it. The frontend shows
-    this one branch and asks the user whether to spawn another."""
+    this one branch and asks the user whether to spawn another. `tried` is a JSON list of
+    the directives already run on this ad, so each step takes the next untried branch."""
     img = await _image(image)
     box = json.loads(target) if target else None
-    before = dg.predict(img, box)
+    before = dg.predict(img, box, n_thieves=3)
+    gemini.label_distractors(img, before["distractors"])  # branches name what to remove
     tbox = box or before["target_box"]
     current = before["attention_score"]
     abs_before = before["target_salience"]
 
-    # One branch at a time, so ORDER matters. Lead with stronger edits before the riskier
-    # structural ones (remove/reframe/recolor) that can regress. The score is size-invariant
-    # prominence, so a strong edit no longer trivially wins — the real delta can go negative
-    # and is reported as such.
-    pool = _stepwise_order(agents._directive_pool(before, {}, brand))
-    directive = pool[step % len(pool)]
+    # One branch at a time: the strongest attention thief on the CURRENT image that hasn't
+    # been tried yet. After a kept removal the next thief surfaces on its own.
+    done = " ".join(json.loads(tried or "[]"))
+    pool = agents.branches(before, brand)
+    fresh = [b for b in pool if b["directive"] not in done] or [pool[step % len(pool)]]
+    pick = dict(fresh[0])
     if hint.strip():  # the user's own suggestion, applied on top of the auto edit
-        directive = f"{directive}. Also apply the user's request: {hint.strip()}"
-    variant, desc = gemini.edit_image(img, directive)
+        pick["directive"] = f"{pick['directive']}. Also apply the user's request: {hint.strip()}"
+    variant, desc = agents.edit_branch(img, pick)
     really_edited = not str(desc).startswith("[")
     # Both axes in one pass: size-invariant prominence + absolute on-target salience.
     new_score, abs_after = dg.score_components(variant, tbox)
@@ -162,7 +151,7 @@ async def optimize_step(image: UploadFile = File(...), brand: str = Form("the br
         # Honest: improved only when the real score rose, the Judge didn't veto it, AND the
         # guard confirms a real perceptible on-target gain (not suppression / invisible edit).
         "improved": bool(new_score > current and not vetoed and accepted),
-        "n_directives": len(pool),
+        "n_directives": step + len(fresh),  # this branch plus the untried ones left
     }
 
 
