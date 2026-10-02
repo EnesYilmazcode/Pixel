@@ -3,9 +3,9 @@ from __future__ import annotations
 
 
 def branches(before: dict, brand: str) -> list[dict]:
-    """Branch edits for one image, strongest first. Each is {"directive", "region"}:
-    one concrete change, and the normalized boxes the edit is allowed to touch (see
-    compose.keep_region).
+    """Branch edits for one image, strongest first. Each is {"directive", "region",
+    "protect"}: one concrete change, the normalized boxes the change must stay near, and
+    the boxes it must never touch (see compose.keep_changes).
 
     Every branch removes one attention thief, the strongest first, because that is the
     edit the measurements back: on five ads, removing the named thief beat the original
@@ -21,12 +21,16 @@ def branches(before: dict, brand: str) -> list[dict]:
             what = f"distracting object in the {what} of the photo"
         out.append({
             "directive": f"remove the {what} completely and fill its area with what would "
-                         f"naturally be behind it",
+                         f"naturally be behind it. Keep the {brand} ad, product, logo and slogan "
+                         f"exactly as they are",
             "region": [d["region"]],
+            "protect": [before["target_box"]],
         })
+    # Asked for a crisper "label", the model wrote a new one, so this names no text at all.
     out.append({
-        "directive": f"make the {brand} product itself a little crisper and cleaner: sharper "
-                     f"label and logo edges and clean highlights, same color, same size, same place",
+        "directive": f"make the surface of the {brand} product a little crisper and cleaner with "
+                     f"clean highlights, without adding, changing or removing any text or logo",
         "region": [before["target_box"]],
+        "protect": [],
     })
     return out

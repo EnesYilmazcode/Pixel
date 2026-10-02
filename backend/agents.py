@@ -47,11 +47,11 @@ def scout(brand: str, brief: dict) -> dict:
 
 
 def edit_branch(image: Image.Image, branch_: dict) -> tuple[Image.Image, str]:
-    """Run one branch edit and keep it only inside the branch's region."""
+    """Run one branch edit and keep only its real changes near the branch's region."""
     variant, desc = gemini.edit_image(image, branch_["directive"])
     if str(desc).startswith("["):
         return variant, desc
-    return compose.keep_region(image, variant, branch_["region"]), desc
+    return compose.keep_changes(image, variant, branch_["region"], branch_.get("protect")), desc
 
 
 def _directive_pool(before: dict, insights: dict, brand: str) -> list[str]:
