@@ -16,6 +16,8 @@ from PIL import Image
 
 import branch
 import competitive
+import compose
+from branch_pool import branches
 import deepgaze_runner as dg
 import eval_guard
 import gemini
@@ -44,42 +46,17 @@ def scout(brand: str, brief: dict) -> dict:
     return _SCOUT_CACHE[key]
 
 
+def edit_branch(image: Image.Image, branch_: dict) -> tuple[Image.Image, str]:
+    """Run one branch edit and keep it only inside the branch's region."""
+    variant, desc = gemini.edit_image(image, branch_["directive"])
+    if str(desc).startswith("["):
+        return variant, desc
+    return compose.keep_region(image, variant, branch_["region"]), desc
+
+
 def _directive_pool(before: dict, insights: dict, brand: str) -> list[str]:
-    """Diverse edit hypotheses, spanning safe→moderately strong. ENHANCEMENT-first so the
-    winner looks like a *better ad*, not a scorched background with a floating logo; the
-    Judge-gated fitness (_make_scorer) penalizes any variant that crosses into garish, so
-    the search can push moderately without an ugly edit winning on raw attention."""
-    target = f"the {brand} logo and product"
-    # Content-level levers that actually move DeepGaze (gentle re-lighting barely does). The first
-    # three run on the live (depth=1) path, so they're the highest-value, most distinct edits:
-    # de-clutter, reframe head-on, add brand text. Judge-gated fitness still vetoes un-ad-like edits.
-    pool = [
-        f"make SEVERAL coordinated changes at once to turn this into a polished campaign: remove the "
-        f"clutter and any objects, hands, props or stray text crowding or blocking {target}; reframe "
-        f"it head-on and enlarge it as the clear hero; clean and simplify the background; and add a "
-        f"bold, legible on-brand headline, call-to-action and wordmark on {target}",
-        f"remove or clean away any objects, hands, props or background obstructions that crowd or "
-        f"block {target} so the product is fully visible, unobstructed, and the clear hero of the shot",
-        f"reframe {target} to a clean, head-on, front-facing hero angle — square it to the camera so "
-        f"it faces the viewer directly and reads instantly — keep it in roughly the same spot",
-        f"add a bold, legible, on-brand headline and call-to-action and strengthen the logo/wordmark "
-        f"right at {target} as a strong, high-contrast focal point",
-        f"clearly enlarge, brighten and sharpen {target} so it becomes the single biggest, boldest "
-        f"focal element while gently dimming and de-cluttering the surroundings — a polished, real ad",
-        f"recolor the background to a clean, on-brand solid or subtle gradient so {target} stands out "
-        f"as the hero, keeping the shot photographic and realistic",
-    ]
-    # Targeted suppression of each named competing element (clearly tone down, not blackout).
-    pool += [f"clearly tone down or remove the {d['desc']} — it is stealing attention from "
-             f"{target}; reduce its brightness, color and prominence so the brand wins the eye"
-             for d in before["distractors"]]
-    pool += [t["apply"] for t in insights.get("tactics", [])]
-    seen, uniq = set(), []
-    for d in pool:
-        if d and d not in seen:
-            seen.add(d)
-            uniq.append(d)
-    return uniq
+    """Directive strings for the branching search (see `branches`)."""
+    return [b["directive"] for b in branches(before, brand)]
 
 
 def _serialize_tree(tree: list[dict]) -> list[dict]:
@@ -140,7 +117,9 @@ def _step_context(state: dict) -> dict:
 
 def _step_optimize(state: dict) -> dict:
     """Retoucher: branching tree-search over edits, scored by the Judge-gated fitness."""
-    pool = _directive_pool(state["before"], state["insights"], state["brand"])
+    pool_ = branches(state["before"], state["brand"])
+    pool = [b["directive"] for b in pool_]
+    by_directive = {b["directive"]: b for b in pool_}
 
     def propose(_img, node, n):
         start = (node["depth"] * n) % len(pool)  # rotate so each round tries fresh avenues
@@ -149,7 +128,7 @@ def _step_optimize(state: dict) -> dict:
     judged: dict[int, dict] = {}
     state["result"] = branch.search(
         state["image"], state["baseline"], propose,
-        edit=lambda img, directive: gemini.edit_image(img, directive),
+        edit=lambda img, directive: edit_branch(img, by_directive[directive]),
         score=_make_scorer(state["target"], state["brand"], judged),
         breadth=settings.breadth, max_depth=state["depth"], beam_width=1,
         target_score=settings.target_score, epsilon=settings.epsilon,
