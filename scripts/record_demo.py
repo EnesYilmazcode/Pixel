@@ -3,6 +3,7 @@
     python scripts/record_demo.py                 # every sample that isn't recorded yet
     python scripts/record_demo.py nike apple      # just these (re-records them)
     python scripts/record_demo.py --rejudge       # re-run the current guard on saved runs
+    python scripts/record_demo.py nike --steps=3  # fewer branches, to save image edits
 
 Calls the real FastAPI app in-process, the same way the frontend does: /predict on the
 sample, then /optimize/step a few times, re-sending the current best creative after each
@@ -33,7 +34,7 @@ import main  # noqa: E402
 SAMPLES_TS = ROOT / "frontend" / "src" / "samples.ts"
 PUBLIC = ROOT / "frontend" / "public"
 OUT = PUBLIC / "replay"
-STEPS = 4
+STEPS = 5
 EDIT_MAX = 1400  # longest side of the saved edit images; scoring happens at full size
 
 
@@ -82,7 +83,8 @@ def record(client: TestClient, s: dict) -> None:
     for k in range(STEPS):
         t = time.time()
         r = client.post("/optimize/step", files={"image": ("best.png", best, "image/png")},
-                        data={"brand": s["brand"], "target": box, "step": str(k)})
+                        data={"brand": s["brand"], "target": box, "step": str(k),
+                              "tried": json.dumps([x["directive"] for x in steps])})
         r.raise_for_status()
         res = r.json()
         if res["directive"].startswith("["):
@@ -100,6 +102,8 @@ def record(client: TestClient, s: dict) -> None:
         print("{:14s} step {}   {:.0f} -> {:.0f}  judge {:.2f}  guard {:6s} improved={}  ({:.0f}s)".format(
             sid, k, res["current_score"] * 100, res["new_score"] * 100, res["judge"],
             res["guard"], res["improved"], time.time() - t))
+        if k + 1 >= res["n_directives"]:  # no untried branch left on this ad
+            break
     (out / "steps.json").write_text(json.dumps(steps, indent=1), encoding="utf-8")
 
 
@@ -134,7 +138,10 @@ def main_() -> None:
             if (OUT / s["id"] / "steps.json").exists():
                 rejudge(s)
         return
-    want = sys.argv[1:]
+    global STEPS
+    args = [a for a in sys.argv[1:] if not a.startswith("--steps=")]
+    STEPS = next((int(a.split("=")[1]) for a in sys.argv[1:] if a.startswith("--steps=")), STEPS)
+    want = args
     client = TestClient(main.app)
     with client:
         for s in samples():
