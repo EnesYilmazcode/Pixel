@@ -3,18 +3,23 @@
 Nano Banana returns a whole new frame even for a one-object edit: it shifts the picture
 by a few pixels, re-renders textures and nudges colors everywhere. On the recorded runs
 that drift alone moved the score by a few points either way. So each branch edit is
-registered back onto the original (translation only) and pasted in through a feathered
-mask over the region the branch targets. Every pixel outside that region stays identical
-to the original, and the score can only move because of the intended change.
+registered back onto the original (translation only), and only the pixels that really
+changed near the branch's target are pasted in. A fixed box around the thief was not
+enough: it cut objects in half and left seams, so the mask follows the actual change.
+Every other pixel stays identical to the original.
 """
 from __future__ import annotations
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
+from scipy.ndimage import binary_dilation, binary_fill_holes, binary_opening, gaussian_filter
 
 REG_SIDE = 512      # register at this resolution
 MAX_SHIFT = 0.05    # ignore a "registration" bigger than this fraction of the frame
 GROW = 0.04         # grow the branch region by this fraction of the frame
+NEAR = 0.08         # a changed pixel counts only within this distance of the branch region
+DIFF_SIDE = 256     # resolution of the change map
+DIFF_THRESH = 24    # mean RGB difference (0..255) that counts as a real change
 FEATHER = 0.012     # feather radius, fraction of the long side
 
 
@@ -62,9 +67,28 @@ def region_mask(size, regions, grow: float = GROW, feather: float = FEATHER) -> 
     return m.filter(ImageFilter.GaussianBlur(feather * max(w, h)))
 
 
-def keep_region(orig: Image.Image, edited: Image.Image, regions) -> Image.Image:
-    """The original, with the registered edit pasted in over `regions` only."""
+def change_mask(orig: Image.Image, edited: Image.Image, near, protect=None) -> Image.Image:
+    """Feathered mask of where `edited` really differs from `orig`: blurred at low
+    resolution so jitter drops out, limited to within NEAR of the `near` regions, and
+    never inside the `protect` regions (the brand's own box)."""
+    w, h = orig.size
+    s = DIFF_SIDE / max(w, h)
+    size = (max(16, int(w * s)), max(16, int(h * s)))
+    a = np.asarray(orig.convert("RGB").resize(size, Image.BILINEAR), np.float64)
+    b = np.asarray(edited.convert("RGB").resize(size, Image.BILINEAR), np.float64)
+    m = gaussian_filter(np.abs(a - b).mean(2), 1.5) > DIFF_THRESH
+    m = binary_opening(m, iterations=1)
+    m = binary_fill_holes(binary_dilation(m, iterations=3))
+    allow = np.asarray(region_mask(size, near, grow=NEAR, feather=0)) > 0
+    if protect:
+        allow &= ~(np.asarray(region_mask(size, protect, grow=0.0, feather=0)) > 0)
+    m &= allow
+    mi = Image.fromarray((m * 255).astype(np.uint8)).resize((w, h), Image.BILINEAR)
+    return mi.filter(ImageFilter.GaussianBlur(FEATHER * max(w, h)))
+
+
+def keep_changes(orig: Image.Image, edited: Image.Image, near, protect=None) -> Image.Image:
+    """The original, with only the real changes of the registered edit near `near` pasted in."""
     orig = orig.convert("RGB")
-    if not regions:
-        return orig
-    return Image.composite(register(orig, edited), orig, region_mask(orig.size, regions))
+    reg = register(orig, edited)
+    return Image.composite(reg, orig, change_mask(orig, reg, near, protect))
