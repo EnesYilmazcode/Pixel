@@ -25,6 +25,9 @@ jobs:
       - name: suppression and invisible-edit rejection
         working-directory: backend
         run: python test_eval_guard.py
+      - name: branch edits stay local and never add text
+        working-directory: backend
+        run: python test_branches.py
 
   frontend-build:
     name: frontend typecheck + build
