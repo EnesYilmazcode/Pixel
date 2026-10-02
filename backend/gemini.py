@@ -31,18 +31,16 @@ def _genai():
     return _client
 
 
-# Focus-oriented edit template. We optimize attention onto the brand, so the editor MAY make
-# real content changes — enlarge/brighten the logo, add a bold CTA, remove clutter — not just
-# dim the background. Only constraint: keep the brand element roughly where it is and keep the
-# overall aspect ratio (so the before/after attention score stays comparable).
+# Edit template. Measured on the recorded runs (docs/PIXEL_FINDINGS.md): text is the
+# strongest attractor DeepGaze knows, so a new headline or button outside the brand box
+# cost 5 to 22 points, and "make it a polished ad" made the model redraw the whole frame.
+# So the editor gets one concrete, local change and is told not to add text or touch
+# anything else. Dimming the scene is not offered either; the guard rejects it anyway.
 _EDIT_TMPL = (
-    "You are a senior art director optimizing this ad so the brand's logo / product / "
-    "call-to-action is the first thing the eye lands on. Apply this change: {directive}. "
-    "You MAY enlarge, brighten and sharpen the brand logo and product, add a clear bold "
-    "on-brand call-to-action or wordmark, and remove or simplify clutter and competing "
-    "elements. Keep the brand element roughly centered where it already sits (do not move it "
-    "to a different part of the frame) and do NOT crop or change the overall aspect ratio. "
-    "Return one polished, realistic, on-brand ad."
+    "Edit this ad photo. Apply exactly this one change: {directive}. "
+    "Do not add any text, letters, words, logos, slogans, buttons, badges or graphics. "
+    "Do not change the lighting, colors, camera angle, framing or crop, and do not move "
+    "or resize the product. Leave every other part of the photo exactly as it is."
 )
 
 
