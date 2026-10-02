@@ -48,3 +48,4 @@ backend/demo_out/
 
 # Static web demo build (npm run build:demo)
 web-dist/
+.firebase/
