@@ -119,6 +119,7 @@ export async function health(): Promise<Health> {
 
 export async function optimizeStep(
   image: File, brand: string, step: number, target?: Box, hint?: string, sample?: string,
+  tried: string[] = [],
 ): Promise<StepResult> {
   if (DEMO) {
     if (!sample) throw new Error("The demo replays the sample ads only");
@@ -130,6 +131,7 @@ export async function optimizeStep(
   fd.append("step", String(step));
   if (target) fd.append("target", JSON.stringify(target));
   if (hint && hint.trim()) fd.append("hint", hint.trim()); // optional user suggestion to Nano Banana
+  fd.append("tried", JSON.stringify(tried)); // so the backend picks the next untried branch
   const r = await fetch("/optimize/step", { method: "POST", body: fd });
   if (!r.ok) throw new Error(`/optimize/step ${r.status}`);
   return r.json();
