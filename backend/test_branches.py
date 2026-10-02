@@ -41,6 +41,12 @@ def test_no_branch_adds_text_or_dims_the_scene():
         assert not re.search(r"add", d), d  # never asks to add anything
 
 
+def test_brand_own_elements_are_never_removed():
+    before = dict(_BEFORE, distractors=[{"desc": "Just do it slogan", "share": 0.1, "own": True,
+                                         "region": [0.3, 0.7, 0.2, 0.1]}])
+    assert len(branches(before, "Nike")) == 1  # only the product polish is left
+
+
 def test_ad_with_no_thieves_still_gets_a_branch():
     assert len(branches({"target_box": [0.3, 0.3, 0.3, 0.3], "distractors": []}, "Pepsi")) == 1
 
