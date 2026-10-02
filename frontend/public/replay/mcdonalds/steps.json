@@ -1,82 +1,22 @@
 [
  {
   "step": 0,
-  "directive": "make SEVERAL coordinated changes at once to turn this into a polished campaign: remove the clutter and any objects, hands, props or stray text crowding or blocking the McDonald's logo and product; reframe it head-on and enlarge it as the clear hero; clean and simplify the background; and add a bold, legible on-brand headline, call-to-action and wordmark on the McDonald's logo and product",
+  "directive": "make the McDonald's product itself a little crisper and cleaner: sharper label and logo edges and clean highlights, same color, same size, same place",
   "variant_png": "replay/mcdonalds/step0.jpg",
   "current_score": 0.8383,
-  "new_score": 0.7213,
-  "delta": -0.117,
+  "new_score": 0.8386,
+  "delta": 0.0003,
   "target_salience_before": 0.8893,
-  "target_salience_after": 0.4438,
-  "judge": 0.95,
-  "judge_reason": "This is a high-quality, brand-fit creative that would absolutely run as a real ad for McDonald's. The visual of the illuminated Golden Arches against a dark, night sky immediately sets the scene for 'late night.' The copy 'LATE NIGHT CRAVINGS? FIND YOURS. ALWAYS OPEN' is concise, directly addresses a common consumer need, and highlights a key brand strength (convenience/extended hours). The use of the iconic McDonald's colors (yellow and red) is strong, and the overall composition is impactful and clear. The Japanese text on the sign adds a subtle touch of global authenticity without detracting from the universal message. It's a very effective ad.",
+  "target_salience_after": 0.8908,
+  "judge": 0.9,
+  "judge_reason": "This creative is high quality and has excellent brand-fit. The image leverages McDonald's most iconic elements: the glowing Golden Arches and the red sign with the brand name. The dark background makes the signage pop, creating a strong visual impact that is instantly recognizable. The inclusion of '\u30c9\u30e9\u30a4\u30d6\u30b9\u30eb\u30fc' (Drive-Thru) clearly communicates a key service. McDonald's frequently uses images of its iconic signs, especially at night, to evoke feelings of convenience, availability, and a welcoming presence. This image could very easily run as a real ad, for instance, in campaigns highlighting late-night service, drive-thru convenience, or general brand presence. The simplicity and strong focus on brand identity make it highly effective.",
   "vetoed": false,
   "guard": "reject",
   "guard_reasons": [
    "attention score did not improve"
   ],
   "improved": false,
-  "n_directives": 6,
+  "n_directives": 1,
   "variant_heatmap": "replay/mcdonalds/step0-heat.png"
- },
- {
-  "step": 1,
-  "directive": "add a bold, legible, on-brand headline and call-to-action and strengthen the logo/wordmark right at the McDonald's logo and product as a strong, high-contrast focal point",
-  "variant_png": "replay/mcdonalds/step1.jpg",
-  "current_score": 0.8383,
-  "new_score": 0.7412,
-  "delta": -0.0971,
-  "target_salience_before": 0.8893,
-  "target_salience_after": 0.4911,
-  "judge": 0.85,
-  "judge_reason": "This creative has strong brand recognition and a clear message. The iconic golden arches and McDonald's logo (with Japanese 'drive-thru' text) are instantly identifiable. The 'ALWAYS OPEN' headline perfectly aligns with McDonald's messaging of convenience and availability, especially for late-night or early-morning customers. 'ORDER NOW' provides a direct call to action. The use of McDonald's brand colors (yellow, red, against a dark background) makes the sign pop. While the photographic quality of the sign itself appears somewhat raw or weathered (which some campaigns might embrace for authenticity, others might polish), and the 'ALWAYS OPEN' text is digitally overlaid, the core elements are effective and on-brand. It's highly likely this could run as a real ad, particularly for digital channels, social media, or localized campaigns emphasizing convenience.",
-  "vetoed": false,
-  "guard": "reject",
-  "guard_reasons": [
-   "attention score did not improve"
-  ],
-  "improved": false,
-  "n_directives": 6,
-  "variant_heatmap": "replay/mcdonalds/step1-heat.png"
- },
- {
-  "step": 2,
-  "directive": "clearly enlarge, brighten and sharpen the McDonald's logo and product so it becomes the single biggest, boldest focal element while gently dimming and de-cluttering the surroundings \u2014 a polished, real ad",
-  "variant_png": "replay/mcdonalds/step2.jpg",
-  "current_score": 0.8383,
-  "new_score": 0.7827,
-  "delta": -0.0556,
-  "target_salience_before": 0.8893,
-  "target_salience_after": 0.6177,
-  "judge": 0.9,
-  "judge_reason": "This creative has excellent brand fit and high quality. The iconic McDonald's golden arches and logotype are instantly recognizable, even in this stark, nighttime setting. The clear 'DRIVE-THRU' messaging in both Japanese and English effectively communicates a key service. The dark background makes the illuminated sign pop, giving it a strong visual impact that would work well across various ad placements (digital billboards, social media, print). McDonald's frequently uses its iconic signage in advertising to reinforce brand presence and highlight convenience, making this a very plausible and effective real ad.",
-  "vetoed": false,
-  "guard": "reject",
-  "guard_reasons": [
-   "attention score did not improve"
-  ],
-  "improved": false,
-  "n_directives": 6,
-  "variant_heatmap": "replay/mcdonalds/step2-heat.png"
- },
- {
-  "step": 3,
-  "directive": "remove or clean away any objects, hands, props or background obstructions that crowd or block the McDonald's logo and product so the product is fully visible, unobstructed, and the clear hero of the shot",
-  "variant_png": "replay/mcdonalds/step3.jpg",
-  "current_score": 0.8383,
-  "new_score": 0.8042,
-  "delta": -0.0341,
-  "target_salience_before": 0.8893,
-  "target_salience_after": 0.7045,
-  "judge": 0.9,
-  "judge_reason": "This ad creative is very high quality and fits the McDonald's brand perfectly. The image is clean, well-lit, and immediately recognizable as McDonald's due to the iconic Golden Arches and brand colors (red and yellow). The message 'OPEN LATE' is clear, concise, and directly relevant to a common customer need, especially for late-night cravings. The inclusion of '\u30c9\u30e9\u30a4\u30d6\u30b9\u30eb\u30fc' (Drive-thru) further emphasizes convenience, a key aspect of McDonald's service. This creative effectively communicates a valuable service offering using strong brand elements and would absolutely run as a real ad, particularly in markets like Japan where this sign style is common.",
-  "vetoed": false,
-  "guard": "reject",
-  "guard_reasons": [
-   "attention score did not improve"
-  ],
-  "improved": false,
-  "n_directives": 6,
-  "variant_heatmap": "replay/mcdonalds/step3-heat.png"
  }
 ]

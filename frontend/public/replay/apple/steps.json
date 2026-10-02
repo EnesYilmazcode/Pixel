@@ -1,82 +1,102 @@
 [
  {
   "step": 0,
-  "directive": "make SEVERAL coordinated changes at once to turn this into a polished campaign: remove the clutter and any objects, hands, props or stray text crowding or blocking the Apple logo and product; reframe it head-on and enlarge it as the clear hero; clean and simplify the background; and add a bold, legible on-brand headline, call-to-action and wordmark on the Apple logo and product",
+  "directive": "remove the Sport watch band completely and fill its area with what would naturally be behind it. Keep the Apple ad, product, logo and slogan exactly as they are",
   "variant_png": "replay/apple/step0.jpg",
   "current_score": 0.7581,
-  "new_score": 0.6945,
-  "delta": -0.0636,
+  "new_score": 0.7732,
+  "delta": 0.0151,
   "target_salience_before": 0.6983,
-  "target_salience_after": 0.5065,
-  "judge": 0.8,
-  "judge_reason": "The creative exhibits strong brand-fit for Apple in terms of its aesthetic, messaging, and overall feel. The minimalist composition, aspirational slogan ('Experience More'), and clear call to action ('Learn More') are all characteristic of Apple's advertising. The imagery of the floating iPhone above a hand with an Apple Watch subtly highlights the ecosystem and a sense of effortless interaction or wonder. The photography quality and typography also align well with Apple's premium brand image. The main factor reducing a perfect score is the use of an iPhone X, which is an older model; current Apple ads almost exclusively feature their latest hardware. However, if this ad were created when the iPhone X was current, it would be an excellent example of an Apple campaign.",
+  "target_salience_after": 0.7594,
+  "judge": 0.7,
+  "judge_reason": "The creative concept of a floating iPhone is strong and visually engaging, aligning with Apple's aesthetic of wonder and seamless interaction. The composition effectively highlights the device. However, the specific iPhone model appears to be an older generation (likely X/XS era), and the screen content (apps, notifications, older app icons for some) and the slightly generic outdoor background lack the hyper-polished, meticulously controlled, and often minimalist presentation typical of Apple's flagship advertising campaigns. It has good potential but would likely require refinement in product generation, screen content, and overall production quality to meet Apple's stringent brand standards for a major ad.",
   "vetoed": false,
-  "guard": "reject",
+  "guard": "accept",
   "guard_reasons": [
-   "attention score did not improve"
+   "perceptible, localized/justified, and target salience improved"
   ],
-  "improved": false,
-  "n_directives": 8,
+  "improved": true,
+  "n_directives": 4,
   "variant_heatmap": "replay/apple/step0-heat.png"
  },
  {
   "step": 1,
-  "directive": "add a bold, legible, on-brand headline and call-to-action and strengthen the logo/wordmark right at the Apple logo and product as a strong, high-contrast focal point",
+  "directive": "remove the Blurred building reflection completely and fill its area with what would naturally be behind it. Keep the Apple ad, product, logo and slogan exactly as they are",
   "variant_png": "replay/apple/step1.jpg",
-  "current_score": 0.7581,
-  "new_score": 0.6853,
-  "delta": -0.0728,
-  "target_salience_before": 0.6983,
-  "target_salience_after": 0.4851,
-  "judge": 0.6,
-  "judge_reason": "The ad features core Apple products (iPhone, Apple Watch, logo) and a relevant tagline 'CAPTURE YOUR WORLD' with a clear call to action, aligning with a key iPhone feature (camera). The composition is clean and the lighting is natural. However, it's unlikely to run as a real Apple ad due to several factors: the iPhone model appears to be an older generation (likely an iPhone X), whereas Apple typically features its latest models prominently in new campaigns. The concept of a levitating phone, while common in tech ads, lacks the unique, minimalist, and often more abstract or experiential creativity typically associated with official Apple campaigns. Furthermore, the overall production quality, while decent, doesn't quite reach the hyper-polished, studio-level photography and precise typography standards Apple is known for.",
+  "current_score": 0.7732,
+  "new_score": 0.7731,
+  "delta": -0.0001,
+  "target_salience_before": 0.7594,
+  "target_salience_after": 0.7591,
+  "judge": 0.3,
+  "judge_reason": "The creative has a visually interesting concept with the floating iPhone, suggesting advanced technology or a magical user experience, which aligns thematically with Apple's brand mystique. The product is clearly the focus, and the image quality (sharpness, depth of field) is good. However, it falls short of Apple's typical advertising standards for several reasons: the background is generic and lacks the highly curated, aspirational environments often seen in official Apple ads; the lighting, while soft, doesn't achieve the dramatic or iconic aesthetic Apple usually employs; and critically, it features an older iPhone model (likely iPhone X/XS era), which Apple would not use to advertise current products. It feels more like a high-quality stock photo or enthusiast content rather than an official, high-production-value Apple campaign.",
+  "vetoed": true,
+  "guard": "reject",
+  "guard_reasons": [
+   "attention score did not improve"
+  ],
+  "improved": false,
+  "n_directives": 5,
+  "variant_heatmap": "replay/apple/step1-heat.png"
+ },
+ {
+  "step": 2,
+  "directive": "remove the Human hand palm completely and fill its area with what would naturally be behind it. Keep the Apple ad, product, logo and slogan exactly as they are",
+  "variant_png": "replay/apple/step2.jpg",
+  "current_score": 0.7732,
+  "new_score": 0.7728,
+  "delta": -0.0004,
+  "target_salience_before": 0.7594,
+  "target_salience_after": 0.7575,
+  "judge": 0.85,
+  "judge_reason": "This creative demonstrates high quality with a sharp focus on the product, a clean aesthetic, and a compelling visual concept. The 'floating phone' effect, combined with the hand reaching for it, evokes a sense of wonder, effortlessness, or magic, which aligns well with Apple's aspirational and innovative brand identity. The blurred outdoor background provides a lifestyle context without distracting from the iPhone. Apple frequently uses striking, sometimes slightly surreal, imagery to highlight their products' design and user experience. While it's an older iPhone model, the creative direction is very much in line with how Apple presents its devices as elegant, advanced, and almost magical tools.",
   "vetoed": false,
   "guard": "reject",
   "guard_reasons": [
    "attention score did not improve"
   ],
   "improved": false,
-  "n_directives": 8,
-  "variant_heatmap": "replay/apple/step1-heat.png"
- },
- {
-  "step": 2,
-  "directive": "clearly enlarge, brighten and sharpen the Apple logo and product so it becomes the single biggest, boldest focal element while gently dimming and de-cluttering the surroundings \u2014 a polished, real ad",
-  "variant_png": "replay/apple/step2.jpg",
-  "current_score": 0.7581,
-  "new_score": 0.7858,
-  "delta": 0.0277,
-  "target_salience_before": 0.6983,
-  "target_salience_after": 0.8174,
-  "judge": 0.3,
-  "judge_reason": "This creative attempts to capture Apple's focus on user experience, using a clean font and the iconic logo. However, several factors make it unlikely to run as a real Apple ad: \n1. **Outdated Product:** The ad features an iPhone X, which is an older model. Apple typically highlights its latest products in primary ad campaigns.\n2. **Quality & Polish:** The 'floating' effect and the glow around the phone appear somewhat amateurish and not seamlessly integrated. Apple ads are known for their extremely high production value, precision, and minimalist perfection, which this creative doesn't quite achieve.\n3. **Generic Message:** While 'EXPERIENCE' is a core tenet of Apple's brand, a single, broad word like this is often too generic for a standalone ad creative. Apple usually pairs its general ethos with specific features, innovations, or emotional benefits ('Privacy. That's iPhone,' 'Shot on iPhone,' 'The new way to interact with your phone').\n4. **Background:** The blurred background, while aiming for a lifestyle feel, lacks the distinctive or aspirational quality typical of Apple's curated environmental shots or their signature clean, often studio-like aesthetic.\n5. **Brand Fit (Aesthetics):** While the Apple logo and text font are on-brand, the overall execution lacks the sophisticated, premium feel Apple meticulously maintains in its advertising.",
-  "vetoed": true,
-  "guard": "reject",
-  "guard_reasons": [
-   "raised the score by degrading the rest of the frame: darkened (0.68x), flattened (0.59x), desaturated (0.50x)"
-  ],
-  "improved": false,
-  "n_directives": 8,
+  "n_directives": 5,
   "variant_heatmap": "replay/apple/step2-heat.png"
  },
  {
   "step": 3,
-  "directive": "remove or clean away any objects, hands, props or background obstructions that crowd or block the Apple logo and product so the product is fully visible, unobstructed, and the clear hero of the shot",
+  "directive": "remove the Blurred outdoor scene completely and fill its area with what would naturally be behind it. Keep the Apple ad, product, logo and slogan exactly as they are",
   "variant_png": "replay/apple/step3.jpg",
-  "current_score": 0.7581,
-  "new_score": 0.7711,
-  "delta": 0.013,
-  "target_salience_before": 0.6983,
-  "target_salience_after": 0.7506,
-  "judge": 0.9,
-  "judge_reason": "This creative demonstrates strong brand-fit for Apple. The minimalist aesthetic, featuring a clean product shot against a plain background, is a hallmark of Apple's advertising. The typography is simple and elegant, and the concise tagline 'CAPTURE THE MOMENT' directly highlights a key iPhone feature (the camera) and a core user benefit, aligning perfectly with Apple's benefit-driven messaging. While the phone is an older model (iPhone X/XS era), if evaluated within its historical context, the quality of the image and the clarity of the text are high. It's a straightforward, effective, and visually consistent ad that Apple would very likely run to promote the iPhone's camera capabilities.",
-  "vetoed": false,
+  "current_score": 0.7732,
+  "new_score": 0.7713,
+  "delta": -0.0019,
+  "target_salience_before": 0.7594,
+  "target_salience_after": 0.7513,
+  "judge": 0.2,
+  "judge_reason": "The creative quality of the image itself is good, with a clear concept (levitating phone) and decent photography. However, it fails significantly on brand-fit for Apple as a primary ad creative today. The phone shown is an iPhone X, a model released in 2017. Apple's advertising almost exclusively features its latest flagship models or current generation products. Using a significantly outdated model for a hero creative would be highly unusual and off-brand for Apple, as it doesn't showcase their current innovation or product line. The 'magic' concept is fine, but the outdated device makes it unsuitable for real-world Apple advertising.",
+  "vetoed": true,
   "guard": "reject",
   "guard_reasons": [
-   "raised the score by degrading the rest of the frame: flattened (0.55x), desaturated (0.30x), blurred (0.49x)"
+   "attention score did not improve"
+  ],
+  "improved": false,
+  "n_directives": 7,
+  "variant_heatmap": "replay/apple/step3-heat.png"
+ },
+ {
+  "step": 4,
+  "directive": "remove the blurry structure reflection completely and fill its area with what would naturally be behind it. Keep the Apple ad, product, logo and slogan exactly as they are",
+  "variant_png": "replay/apple/step4.jpg",
+  "current_score": 0.7732,
+  "new_score": 0.7748,
+  "delta": 0.0016,
+  "target_salience_before": 0.7594,
+  "target_salience_after": 0.7663,
+  "judge": 0.2,
+  "judge_reason": "While the image is visually interesting and highlights the iPhone, it lacks the typical polish and specific aesthetic of an official Apple ad. Apple's ads usually feature hyper-realistic, aspirational photography with meticulous attention to detail, often showing the latest model in pristine conditions or iconic settings. This image has a somewhat 'stock photo' feel due to the common 'floating object' trope, and the presence of notification badges on the app icons (e.g., messages, App Store) is something Apple often avoids in hero shots to maintain a clean, aspirational screen display. The model also appears to be an older iPhone X, rather than a current flagship typically featured in major campaigns. It wouldn't likely run as a real Apple ad due to these subtle but significant deviations from their brand guidelines.",
+  "vetoed": true,
+  "guard": "reject",
+  "guard_reasons": [
+   "attention score did not improve"
   ],
   "improved": false,
   "n_directives": 8,
-  "variant_heatmap": "replay/apple/step3-heat.png"
+  "variant_heatmap": "replay/apple/step4-heat.png"
  }
 ]

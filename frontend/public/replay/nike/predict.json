@@ -45,7 +45,8 @@
     0.2
    ],
    "share": 0.36,
-   "desc": "Subway sign"
+   "desc": "Red Subway sign",
+   "own": false
   },
   {
    "region": [
@@ -55,7 +56,8 @@
     0.2
    ],
    "share": 0.074,
-   "desc": "No Turns sign"
+   "desc": "No Turns sign",
+   "own": false
   }
  ]
 }

@@ -1,82 +1,62 @@
 [
  {
   "step": 0,
-  "directive": "make SEVERAL coordinated changes at once to turn this into a polished campaign: remove the clutter and any objects, hands, props or stray text crowding or blocking the Coca-Cola logo and product; reframe it head-on and enlarge it as the clear hero; clean and simplify the background; and add a bold, legible on-brand headline, call-to-action and wordmark on the Coca-Cola logo and product",
+  "directive": "remove the Wet Coca-Cola can completely and fill its area with what would naturally be behind it. Keep the Coca-Cola ad, product, logo and slogan exactly as they are",
   "variant_png": "replay/coca-cola/step0.jpg",
   "current_score": 0.8026,
-  "new_score": 0.5641,
-  "delta": -0.2385,
+  "new_score": 0.8014,
+  "delta": -0.0012,
   "target_salience_before": 0.8585,
-  "target_salience_after": 0.2733,
-  "judge": 0.98,
-  "judge_reason": "This Coca-Cola ad creative is exceptionally high quality and demonstrates outstanding brand-fit. The photography of the can is professional, showcasing the product with appealing condensation that conveys extreme coldness and refreshment. The vibrant red background is the iconic Coca-Cola color, instantly recognizable. Both taglines, 'REFRESH YOUR MOMENT' and especially 'TASTE THE FEELING.' (which is Coca-Cola's actual global marketing tagline since 2016), are perfectly aligned with the brand's messaging of refreshment, experience, and emotional connection. The composition is clean, direct, and impactful, making the product the clear hero. This creative would absolutely run as a real ad; it embodies the quintessential Coca-Cola brand aesthetic and message.",
+  "target_salience_after": 0.8524,
+  "judge": 0.95,
+  "judge_reason": "This creative is exceptionally high quality and a perfect brand-fit for Coca-Cola. The image is a professional product shot, impeccably lit to highlight the condensation and metallic sheen of the can, strongly conveying refreshment and a premium feel. The use of the iconic Coca-Cola red as a clean, simple background is classic brand reinforcement. The composition is clean, focused, and directly showcases the product and its iconic logo. This style of direct, high-quality product photography is a staple of Coca-Cola's advertising and would absolutely run as a real ad across various media, from print to digital.",
   "vetoed": false,
   "guard": "reject",
   "guard_reasons": [
    "attention score did not improve"
   ],
   "improved": false,
-  "n_directives": 7,
+  "n_directives": 3,
   "variant_heatmap": "replay/coca-cola/step0-heat.png"
  },
  {
   "step": 1,
-  "directive": "add a bold, legible, on-brand headline and call-to-action and strengthen the logo/wordmark right at the Coca-Cola logo and product as a strong, high-contrast focal point",
+  "directive": "remove the Coca-Cola can completely and fill its area with what would naturally be behind it. Keep the Coca-Cola ad, product, logo and slogan exactly as they are",
   "variant_png": "replay/coca-cola/step1.jpg",
   "current_score": 0.8026,
-  "new_score": 0.5539,
-  "delta": -0.2487,
+  "new_score": 0.8078,
+  "delta": 0.0052,
   "target_salience_before": 0.8585,
-  "target_salience_after": 0.2623,
-  "judge": 0.9,
-  "judge_reason": "This creative is highly effective and demonstrates strong brand fit for Coca-Cola. The use of the iconic red background, a perfectly photographed cold can with condensation, and the prominent display of the Coca-Cola logo immediately establish brand identity. The headline 'REFRESH YOUR MOMENT' aligns perfectly with Coca-Cola's core messaging around refreshment and experience. The tagline 'TASTE THE FEELING. BUY NOW.' directly incorporates a well-known global Coca-Cola campaign tagline ('Taste the Feeling') and a clear call to action. While the headline font isn't the classic Coca-Cola Spencerian script, it's a stylistic choice that doesn't detract from the brand's essence, and the overall composition is clean, direct, and professional. This ad would very likely run as a real ad in various formats (digital, print, in-store) due to its clarity, strong branding, and direct appeal.",
+  "target_salience_after": 0.8878,
+  "judge": 1.0,
+  "judge_reason": "This ad creative is exceptionally high quality and a perfect brand-fit for Coca-Cola. The image features impeccable lighting, showing the can with realistic condensation that evokes a sense of cold refreshment. The iconic red background is a signature brand element, making the product instantly recognizable and visually appealing. The composition is clean, professional, and directly highlights the product, which is a common and effective strategy for a brand like Coca-Cola. It absolutely would run as a real ad, likely as a hero shot in print, digital, or even billboard campaigns due to its strong visual impact and brand resonance.",
   "vetoed": false,
-  "guard": "reject",
+  "guard": "accept",
   "guard_reasons": [
-   "attention score did not improve"
+   "perceptible, localized/justified, and target salience improved"
   ],
-  "improved": false,
-  "n_directives": 7,
+  "improved": true,
+  "n_directives": 4,
   "variant_heatmap": "replay/coca-cola/step1-heat.png"
  },
  {
   "step": 2,
-  "directive": "clearly enlarge, brighten and sharpen the Coca-Cola logo and product so it becomes the single biggest, boldest focal element while gently dimming and de-cluttering the surroundings \u2014 a polished, real ad",
+  "directive": "make the surface of the Coca-Cola product a little crisper and cleaner with clean highlights, without adding, changing or removing any text or logo",
   "variant_png": "replay/coca-cola/step2.jpg",
-  "current_score": 0.8026,
-  "new_score": 0.6652,
-  "delta": -0.1374,
-  "target_salience_before": 0.8585,
-  "target_salience_after": 0.4196,
-  "judge": 1.0,
-  "judge_reason": "This Coca-Cola ad creative is exceptionally high quality and a perfect brand fit. The image features a perfectly rendered, condensation-laden Coca-Cola can against an iconic red background, immediately evoking refreshment. The use of the official global campaign tagline, 'TASTE THE FEELING,' further solidifies its authenticity and brand alignment. The minimalist yet powerful composition is characteristic of Coca-Cola's advertising, making it highly effective and absolutely suitable to run as a real ad.",
+  "current_score": 0.8078,
+  "new_score": 0.8049,
+  "delta": -0.0029,
+  "target_salience_before": 0.8878,
+  "target_salience_after": 0.8716,
+  "judge": 0.95,
+  "judge_reason": "This Coca-Cola ad creative is excellent in both quality and brand-fit. The photography is crisp, well-lit, and the condensation on the can effectively communicates coolness and refreshment. The vibrant red background is iconic to Coca-Cola, instantly recognizable, and creates a strong brand presence. The composition is clean and focused solely on the product, which is a common and effective strategy for product-centric advertising. This creative absolutely embodies the Coca-Cola brand aesthetic and would very likely run as a real ad across various media, from digital banners to print ads or retail displays.",
   "vetoed": false,
   "guard": "reject",
   "guard_reasons": [
    "attention score did not improve"
   ],
   "improved": false,
-  "n_directives": 7,
+  "n_directives": 3,
   "variant_heatmap": "replay/coca-cola/step2-heat.png"
- },
- {
-  "step": 3,
-  "directive": "remove or clean away any objects, hands, props or background obstructions that crowd or block the Coca-Cola logo and product so the product is fully visible, unobstructed, and the clear hero of the shot",
-  "variant_png": "replay/coca-cola/step3.jpg",
-  "current_score": 0.8026,
-  "new_score": 0.6691,
-  "delta": -0.1335,
-  "target_salience_before": 0.8585,
-  "target_salience_after": 0.427,
-  "judge": 1.0,
-  "judge_reason": "This creative is of excellent quality and perfectly aligns with the Coca-Cola brand. The vibrant red background, the perfectly chilled can with condensation, and the iconic 'Taste the Feeling' tagline are all quintessential Coca-Cola. The photography/rendering is professional and appealing, making the product look refreshing. The minimalist composition focuses entirely on the product and brand message. This would undoubtedly run as a real ad, fitting seamlessly into their established advertising aesthetic.",
-  "vetoed": false,
-  "guard": "reject",
-  "guard_reasons": [
-   "attention score did not improve"
-  ],
-  "improved": false,
-  "n_directives": 7,
-  "variant_heatmap": "replay/coca-cola/step3-heat.png"
  }
 ]
