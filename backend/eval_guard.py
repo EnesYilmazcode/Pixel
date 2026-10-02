@@ -47,6 +47,9 @@ DIFF_THRESH = 8         # per-pixel abs diff (0..255) counted as "changed" (~JND
 GLOBAL_COVERAGE = 0.55  # fraction of pixels changed above which an edit looks "global"
 GLOBAL_BBOX = 0.60      # change bounding-box covering more of the frame than this = "global"
 EPS = 1e-4
+# Smallest score rise that counts as a win. Regenerating a region with no visible change
+# moved the score by up to about half a point on the recorded edits, so smaller rises are noise.
+MIN_GAIN = 0.005
 GRID = 8                # cells per side for the rest-of-frame comparison
 OUTSIDE_MARGIN = 0.04   # grow the target box by this before measuring "the rest of the frame"
 # Floors for the rest of the frame, as after/before ratios. Below any of these, the edit
@@ -219,7 +222,7 @@ def verdict(
     """
     pc = perceptual_change(before, after)
     reasons: list[str] = []
-    ratio_gain = (ratio_after - ratio_before) > EPS
+    ratio_gain = (ratio_after - ratio_before) > MIN_GAIN
     have_abs = target_sal_before is not None and target_sal_after is not None
     real_gain = have_abs and (target_sal_after - target_sal_before) > EPS
     suppression = have_abs and ratio_gain and not real_gain

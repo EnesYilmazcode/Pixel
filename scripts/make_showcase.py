@@ -180,13 +180,14 @@ SHORT = [("SEVERAL", "several at once"), ("headline", "headline + CTA"),
 
 
 def fig_every_edit(sample: str = "red-bull"):
-    """assets/media/every-edit.png - every Nano Banana edit from one recorded optimizer run
-    (frontend/public/replay, made by scripts/record_demo.py), with the scores DeepGaze gave
-    each one against the same fixed brand box."""
+    """assets/media/every-edit.png - every Nano Banana edit from one recorded run of the old
+    preset branches (headline, CTA, several changes at once), saved in
+    results/red-bull-presets, with the scores DeepGaze gave each one against the same
+    fixed brand box."""
     import json
-    run_dir = ROOT / "frontend" / "public" / "replay" / sample
+    run_dir = ROOT / "results" / (sample + "-presets")
     if not (run_dir / "steps.json").exists():
-        print("every-edit.png skipped: run scripts/record_demo.py first")
+        print("every-edit.png skipped: no saved preset run")
         return
     steps = json.loads((run_dir / "steps.json").read_text(encoding="utf-8"))
     box = next(s["box"] for s in load_samples() if s["id"] == sample)

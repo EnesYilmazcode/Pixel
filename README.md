@@ -43,7 +43,7 @@ It is a small win, and it is the kind Pixel now accepts. An earlier version of t
 
 <p align="center"><img src="assets/media/every-edit.png" width="820" alt="The Red Bull ad and four Nano Banana edits of it, each scored lower than the original"></p>
 
-This is a recorded optimizer run on the same Red Bull ad, with every edit saved. Each one looks more like a finished campaign than the original, and each one scored lower. Every one of them added a headline or a slogan, and text pulls the eye off the can. So Pixel kept the original and reported a change of zero. The edit that won above added no text at all.
+This is a recorded optimizer run on the same Red Bull ad, with every edit saved. Each one looks more like a finished campaign than the original, and each one scored lower. Every one of them added a headline or a slogan, and text pulls the eye off the can. So Pixel kept the original and reported a change of zero. The edit that won above added no text at all. Those were the old preset branches. The current ones remove the attention thieves one at a time and paste back only what changed. On the Nike billboard, 4 of 5 branches now win (59 to 77). [`docs/PIXEL_FINDINGS.md`](docs/PIXEL_FINDINGS.md) has the measurements behind that change.
 
 The first version of Pixel could not do this. It measured raw attention inside the brand box, so "make the logo bigger" always won, and it floored every result at the baseline, so the number could only go up. The version here fixes both:
 

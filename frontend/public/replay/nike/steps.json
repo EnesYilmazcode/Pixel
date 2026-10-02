@@ -1,82 +1,102 @@
 [
  {
   "step": 0,
-  "directive": "make SEVERAL coordinated changes at once to turn this into a polished campaign: remove the clutter and any objects, hands, props or stray text crowding or blocking the Nike logo and product; reframe it head-on and enlarge it as the clear hero; clean and simplify the background; and add a bold, legible on-brand headline, call-to-action and wordmark on the Nike logo and product",
+  "directive": "remove the Storefront signs completely and fill its area with what would naturally be behind it. Keep the Nike ad, product, logo and slogan exactly as they are",
   "variant_png": "replay/nike/step0.jpg",
   "current_score": 0.5922,
-  "new_score": 0.446,
-  "delta": -0.1462,
+  "new_score": 0.7125,
+  "delta": 0.1203,
   "target_salience_before": 0.196,
-  "target_salience_after": 0.1086,
-  "judge": 1.0,
-  "judge_reason": "This Nike ad creative is exceptionally high quality and a perfect brand fit. It features a dynamic action shot of a recognizable athlete (Odell Beckham Jr.) that visually conveys the 'DEFY GRAVITY' message. The use of black and white photography with a single, strategic color pop (the orange cleat) is a classic and effective advertising technique often employed by Nike to highlight product and create visual interest. The aspirational headline 'DEFY GRAVITY' combined with Nike's iconic 'Just do it.' slogan strongly reinforces the brand's core values of performance, aspiration, and pushing human limits. This creative is impactful, visually compelling, and perfectly aligned with Nike's established brand identity, making it highly likely to run as a real ad.",
-  "vetoed": false,
-  "guard": "reject",
-  "guard_reasons": [
-   "attention score did not improve"
-  ],
-  "improved": false,
-  "n_directives": 8,
-  "variant_heatmap": "replay/nike/step0-heat.png"
- },
- {
-  "step": 1,
-  "directive": "add a bold, legible, on-brand headline and call-to-action and strengthen the logo/wordmark right at the Nike logo and product as a strong, high-contrast focal point",
-  "variant_png": "replay/nike/step1.jpg",
-  "current_score": 0.5922,
-  "new_score": 0.4746,
-  "delta": -0.1176,
-  "target_salience_before": 0.196,
-  "target_salience_after": 0.1219,
-  "judge": 1.0,
-  "judge_reason": "This Nike ad creative is exceptionally high quality and a perfect fit for the brand. It features a prominent Nike-sponsored athlete (Odell Beckham Jr.), utilizes Nike's iconic 'Just Do It.' tagline along with the aspirational 'Unleash Your Greatness' slogan, and presents a powerful, dynamic image in a classic black and white style frequently employed by Nike for impactful campaigns. The clear call to action 'SHOP NOW' makes it suitable for a real-world advertisement, especially on a prominent digital billboard like the one depicted. This creative strongly aligns with Nike's brand identity of athletic excellence, motivation, and empowerment.",
-  "vetoed": false,
-  "guard": "reject",
-  "guard_reasons": [
-   "attention score did not improve"
-  ],
-  "improved": false,
-  "n_directives": 8,
-  "variant_heatmap": "replay/nike/step1-heat.png"
- },
- {
-  "step": 2,
-  "directive": "clearly enlarge, brighten and sharpen the Nike logo and product so it becomes the single biggest, boldest focal element while gently dimming and de-cluttering the surroundings \u2014 a polished, real ad",
-  "variant_png": "replay/nike/step2.jpg",
-  "current_score": 0.5922,
-  "new_score": 0.5364,
-  "delta": -0.0558,
-  "target_salience_before": 0.196,
-  "target_salience_after": 0.1561,
-  "judge": 0.95,
-  "judge_reason": "This Nike ad creative is exceptionally high quality and a perfect fit for the brand. It leverages Nike's iconic 'Just do it.' slogan prominently. The use of a recognizable athlete (Odell Beckham Jr. in a dynamic action shot) is characteristic of Nike's advertising strategy. The black and white aesthetic with a grainy texture creates a classic, powerful, and gritty feel that aligns perfectly with Nike's brand identity of dedication, perseverance, and athletic excellence. The secondary slogan, 'Don't stop 'til you get enough,' further reinforces this message. The repetition of 'Just do it.' (main and smaller at the bottom with a subtle swoosh) ensures strong brand recall. This ad would absolutely run as a real Nike ad, as it encapsulates all the hallmarks of their successful campaigns.",
-  "vetoed": false,
-  "guard": "reject",
-  "guard_reasons": [
-   "attention score did not improve"
-  ],
-  "improved": false,
-  "n_directives": 8,
-  "variant_heatmap": "replay/nike/step2-heat.png"
- },
- {
-  "step": 3,
-  "directive": "remove or clean away any objects, hands, props or background obstructions that crowd or block the Nike logo and product so the product is fully visible, unobstructed, and the clear hero of the shot",
-  "variant_png": "replay/nike/step3.jpg",
-  "current_score": 0.5922,
-  "new_score": 0.5959,
-  "delta": 0.0037,
-  "target_salience_before": 0.196,
-  "target_salience_after": 0.199,
-  "judge": 1.0,
-  "judge_reason": "This Nike ad creative is of extremely high quality and an impeccable brand fit. It features Odell Beckham Jr., a high-profile Nike athlete known for his spectacular plays, captured in a dynamic, aspirational pose. The black and white aesthetic with the prominently highlighted white Nike cleats creates a strong visual impact, drawing attention to the product while maintaining an iconic feel. The message, 'Don't stop 'til you get enough,' perfectly encapsulates Nike's motivational, relentless pursuit of greatness ethos, which is further cemented by their iconic 'Just do it.' slogan. This ad perfectly aligns with Nike's brand identity of inspiring athletes to push their limits and achieve excellence. It absolutely would run as a real Nike ad, likely as part of a major campaign during OBJ's prime.",
+  "target_salience_after": 0.3344,
+  "judge": 0.98,
+  "judge_reason": "This Nike ad creative demonstrates exceptional quality and brand-fit. Featuring Odell Beckham Jr., a high-profile athlete, in a dynamic black-and-white action shot immediately captures attention. The ad expertly blends a motivational secondary slogan, 'Don't stop 'til you get enough,' with Nike's iconic 'Just do it.' tagline. This combination reinforces Nike's core values of perseverance, achievement, and pushing limits. The visual aesthetic is clean, powerful, and consistent with Nike's premium branding. It's highly effective for a large-format display like a billboard, communicating a strong message quickly. This ad would absolutely run as a real Nike ad, aligning perfectly with their history of athlete endorsements, inspirational messaging, and distinctive visual style.",
   "vetoed": false,
   "guard": "accept",
   "guard_reasons": [
    "perceptible, localized/justified, and target salience improved"
   ],
   "improved": true,
-  "n_directives": 8,
+  "n_directives": 4,
+  "variant_heatmap": "replay/nike/step0-heat.png"
+ },
+ {
+  "step": 1,
+  "directive": "remove the No Turns sign completely and fill its area with what would naturally be behind it. Keep the Nike ad, product, logo and slogan exactly as they are",
+  "variant_png": "replay/nike/step1.jpg",
+  "current_score": 0.7125,
+  "new_score": 0.7458,
+  "delta": 0.0333,
+  "target_salience_before": 0.3344,
+  "target_salience_after": 0.3959,
+  "judge": 1.0,
+  "judge_reason": "This ad creative is exceptionally high quality and perfectly aligns with Nike's brand. It features a prominent athlete (Odell Beckham Jr.) in a dynamic, black-and-white image, conveying intensity and dedication. The motivational message 'Don't stop 'til you get enough' is consistent with Nike's 'Just Do It' ethos, which is prominently displayed as the iconic tagline at the bottom. The visual style, athletic focus, and inspirational messaging are all hallmarks of Nike's global advertising campaigns. This ad not only would run as a real ad, but it exemplifies the brand's established and successful advertising strategy.",
+  "vetoed": false,
+  "guard": "accept",
+  "guard_reasons": [
+   "perceptible, localized/justified, and target salience improved"
+  ],
+  "improved": true,
+  "n_directives": 5,
+  "variant_heatmap": "replay/nike/step1-heat.png"
+ },
+ {
+  "step": 2,
+  "directive": "remove the Swarovski logo completely and fill its area with what would naturally be behind it. Keep the Nike ad, product, logo and slogan exactly as they are",
+  "variant_png": "replay/nike/step2.jpg",
+  "current_score": 0.7458,
+  "new_score": 0.7552,
+  "delta": 0.0094,
+  "target_salience_before": 0.3959,
+  "target_salience_after": 0.4163,
+  "judge": 1.0,
+  "judge_reason": "This Nike ad creative demonstrates exceptional quality and brand-fit. It features a prominent athlete (Odell Beckham Jr.) in a dynamic, action-oriented shot, which is a hallmark of Nike's marketing strategy. The black and white aesthetic adds a powerful, timeless feel. The primary message, 'Don't stop 'til you get enough,' is highly motivational and perfectly aligns with Nike's brand ethos of perseverance, pushing limits, and athletic achievement. The inclusion of the iconic 'Just do it.' tagline reinforces brand identity instantly and effectively. This ad is a strong, cohesive, and impactful piece of creative that would undoubtedly run as a real Nike campaign, likely on major outdoor placements like the one shown.",
+  "vetoed": false,
+  "guard": "accept",
+  "guard_reasons": [
+   "perceptible, localized/justified, and target salience improved"
+  ],
+  "improved": true,
+  "n_directives": 6,
+  "variant_heatmap": "replay/nike/step2-heat.png"
+ },
+ {
+  "step": 3,
+  "directive": "remove the A$AP Ferg poster completely and fill its area with what would naturally be behind it. Keep the Nike ad, product, logo and slogan exactly as they are",
+  "variant_png": "replay/nike/step3.jpg",
+  "current_score": 0.757,
+  "new_score": 0.7705,
+  "delta": 0.0135,
+  "target_salience_before": 0.4203,
+  "target_salience_after": 0.4532,
+  "judge": 0.95,
+  "judge_reason": "This Nike ad creative demonstrates excellent quality and strong brand-fit. The use of a prominent athlete like Odell Beckham Jr. (visible by 'Beckham Jr. 13'), captured in a dynamic, action-oriented black and white photograph, is a classic and effective Nike strategy. The motivational secondary tagline, 'Don't stop 'til you get enough,' perfectly aligns with Nike's ethos of perseverance, pushing limits, and achieving greatness. This message is then powerfully reinforced by the iconic 'Just do it.' slogan. The aesthetic is clean, impactful, and instantly recognizable as Nike. The choice of a black and white image adds a timeless, powerful, and focused feel, ensuring the message stands out. This ad would absolutely run as a real Nike ad, as it encapsulates their brand values, visual identity, and messaging strategy effectively.",
+  "vetoed": false,
+  "guard": "accept",
+  "guard_reasons": [
+   "perceptible, localized/justified, and target salience improved"
+  ],
+  "improved": true,
+  "n_directives": 6,
   "variant_heatmap": "replay/nike/step3-heat.png"
+ },
+ {
+  "step": 4,
+  "directive": "remove the Street signs completely and fill its area with what would naturally be behind it. Keep the Nike ad, product, logo and slogan exactly as they are",
+  "variant_png": "replay/nike/step4.jpg",
+  "current_score": 0.7705,
+  "new_score": 0.7732,
+  "delta": 0.0027,
+  "target_salience_before": 0.4532,
+  "target_salience_after": 0.4602,
+  "judge": 0.95,
+  "judge_reason": "This Nike ad creative is of extremely high quality and exhibits an excellent brand-fit. It features a prominent athlete (Odell Beckham Jr.) in a dynamic, black-and-white image, which is a classic and effective style for Nike. The motivational message, 'Don't stop 'til you get enough,' perfectly aligns with Nike's ethos of perseverance and pushing limits. The inclusion of the iconic 'Just do it.' slogan leaves no doubt about the brand. The overall composition is strong, visually appealing, and delivers a clear, inspiring message. This creative is highly plausible as a real Nike ad; it strongly reflects their advertising strategy, aesthetic, and core brand values.",
+  "vetoed": false,
+  "guard": "reject",
+  "guard_reasons": [
+   "attention score did not improve"
+  ],
+  "improved": false,
+  "n_directives": 7,
+  "variant_heatmap": "replay/nike/step4-heat.png"
  }
 ]

@@ -1,82 +1,102 @@
 [
  {
   "step": 0,
-  "directive": "make SEVERAL coordinated changes at once to turn this into a polished campaign: remove the clutter and any objects, hands, props or stray text crowding or blocking the Spotify logo and product; reframe it head-on and enlarge it as the clear hero; clean and simplify the background; and add a bold, legible on-brand headline, call-to-action and wordmark on the Spotify logo and product",
+  "directive": "remove the human hand completely and fill its area with what would naturally be behind it. Keep the Spotify ad, product, logo and slogan exactly as they are",
   "variant_png": "replay/spotify/step0.jpg",
   "current_score": 0.7596,
-  "new_score": 0.4674,
-  "delta": -0.2922,
+  "new_score": 0.7812,
+  "delta": 0.0216,
   "target_salience_before": 0.6324,
-  "target_salience_after": 0.1756,
-  "judge": 0.9,
-  "judge_reason": "This Spotify ad creative is of high quality and excellent brand-fit. The image is clean, well-composed, and features the product (Spotify app on a phone) prominently. The text 'MUSIC FOR EVERY MOMENT' and 'LISTEN FREE ON SPOTIFY' are clear, legible, and perfectly align with Spotify's core messaging and value proposition. The use of the official Spotify logo and wordmark ensures instant brand recognition. This ad effectively communicates key benefits (music for all occasions, free access) in a visually appealing and brand-consistent manner. It looks like a real ad Spotify would run.",
-  "vetoed": false,
-  "guard": "reject",
-  "guard_reasons": [
-   "attention score did not improve"
-  ],
-  "improved": false,
-  "n_directives": 7,
-  "variant_heatmap": "replay/spotify/step0-heat.png"
- },
- {
-  "step": 1,
-  "directive": "add a bold, legible, on-brand headline and call-to-action and strengthen the logo/wordmark right at the Spotify logo and product as a strong, high-contrast focal point",
-  "variant_png": "replay/spotify/step1.jpg",
-  "current_score": 0.7596,
-  "new_score": 0.7798,
-  "delta": 0.0202,
-  "target_salience_before": 0.6324,
-  "target_salience_after": 0.7088,
-  "judge": 0.9,
-  "judge_reason": "This Spotify ad creative demonstrates high quality and strong brand-fit, making it very likely to run as a real ad. The image is clean, well-lit, and professionally composed, focusing clearly on the smartphone with the Spotify app displayed. The use of the prominent Spotify logo, a relevant tagline ('STREAM YOUR WORLD'), and a clear call to action ('DOWNLOAD NOW') aligns perfectly with typical app marketing strategies. The casual, everyday setting (person holding a phone, blurred outdoor background) resonates with how people naturally interact with streaming services, emphasizing convenience and personal entertainment. The aesthetic is modern and fits Spotify's established brand image. The only minor critique is the visible smudges on the phone screen in some crops, which is a small detail but could be polished for absolute perfection.",
+  "target_salience_after": 0.7147,
+  "judge": 0.75,
+  "judge_reason": "The creative clearly features the Spotify logo on a mobile device, instantly communicating the brand and its primary mode of consumption. The image quality is good, and the casual, outdoor setting aligns well with Spotify's brand message of 'music on-the-go' and everyday usage. While it shows the loading screen rather than active music playback and the background is somewhat generic, it is a highly recognizable and suitable image for general brand awareness or app download campaigns, making it likely to run as a real ad.",
   "vetoed": false,
   "guard": "accept",
   "guard_reasons": [
    "perceptible, localized/justified, and target salience improved"
   ],
   "improved": true,
-  "n_directives": 7,
+  "n_directives": 2,
+  "variant_heatmap": "replay/spotify/step0-heat.png"
+ },
+ {
+  "step": 1,
+  "directive": "remove the Blurred background completely and fill its area with what would naturally be behind it. Keep the Spotify ad, product, logo and slogan exactly as they are",
+  "variant_png": "replay/spotify/step1.jpg",
+  "current_score": 0.7812,
+  "new_score": 0.7812,
+  "delta": 0.0,
+  "target_salience_before": 0.7147,
+  "target_salience_after": 0.7147,
+  "judge": 0.85,
+  "judge_reason": "This creative has high quality and strong brand-fit. The image is clear, well-composed, and features the prominent Spotify logo on a modern smartphone, instantly conveying the brand. The natural lighting and casual 'in-hand' setting contribute to an authentic, lifestyle feel, which aligns well with how Spotify often positions itself as an integrated part of daily life. The background blur effectively draws attention to the product. It would absolutely run as a real ad, likely accompanied by a call-to-action or tagline, as it effectively shows the brand in a relatable usage context. The minor glare/smudge on the screen is a small imperfection but also adds to the 'real-world' authenticity rather than detracting significantly.",
+  "vetoed": false,
+  "guard": "reject",
+  "guard_reasons": [
+   "change is imperceptible (ssim 1.0/1.0) \u2014 likely reward-hack"
+  ],
+  "improved": false,
+  "n_directives": 5,
   "variant_heatmap": "replay/spotify/step1-heat.png"
  },
  {
   "step": 2,
-  "directive": "clearly enlarge, brighten and sharpen the Spotify logo and product so it becomes the single biggest, boldest focal element while gently dimming and de-cluttering the surroundings \u2014 a polished, real ad",
+  "directive": "remove the Blurred light surface completely and fill its area with what would naturally be behind it. Keep the Spotify ad, product, logo and slogan exactly as they are",
   "variant_png": "replay/spotify/step2.jpg",
-  "current_score": 0.7798,
-  "new_score": 0.7747,
-  "delta": -0.0051,
-  "target_salience_before": 0.7088,
-  "target_salience_after": 0.6884,
-  "judge": 0.9,
-  "judge_reason": "This Spotify ad creative is of high quality and excellent brand-fit. The image is clear, well-composed, and focuses directly on the product \u2013 the Spotify app on a smartphone. The iconic Spotify logo is prominently displayed, instantly recognizable. The tagline 'STREAM YOUR WORLD' effectively communicates Spotify's value proposition of extensive content and personalization. The clear call to action 'DOWNLOAD NOW' is direct and actionable. The overall aesthetic is clean, modern, and perfectly aligns with Spotify's brand identity. This creative would absolutely run as a real ad, as it is effective, on-brand, and communicates its message clearly.",
+  "current_score": 0.7812,
+  "new_score": 0.7812,
+  "delta": 0.0,
+  "target_salience_before": 0.7147,
+  "target_salience_after": 0.7147,
+  "judge": 0.65,
+  "judge_reason": "The creative clearly features the Spotify logo on a mobile phone, placing it in a casual, real-world context which aligns with Spotify's brand image of accessibility and everyday use. The photo quality is good, with clear focus and natural lighting. However, the ad creative's effectiveness is limited because it shows the app's loading screen rather than demonstrating active use or highlighting any specific features or benefits of Spotify (e.g., listening to music, podcasts, personalized playlists). This makes it a very generic brand awareness piece that lacks dynamism and a compelling call to action or value proposition. The visible smudges on the phone screen are also a minor detractor for a polished ad. While it *could* run as a simple brand reinforcement ad, it's not a particularly strong or innovative creative that would stand out or drive significant engagement compared to ads showcasing actual listening experiences.",
   "vetoed": false,
   "guard": "reject",
   "guard_reasons": [
-   "attention score did not improve"
+   "change is imperceptible (ssim 1.0/1.0) \u2014 likely reward-hack"
   ],
   "improved": false,
-  "n_directives": 7,
+  "n_directives": 6,
   "variant_heatmap": "replay/spotify/step2-heat.png"
  },
  {
   "step": 3,
-  "directive": "remove or clean away any objects, hands, props or background obstructions that crowd or block the Spotify logo and product so the product is fully visible, unobstructed, and the clear hero of the shot",
+  "directive": "remove the Blue fabric texture completely and fill its area with what would naturally be behind it. Keep the Spotify ad, product, logo and slogan exactly as they are",
   "variant_png": "replay/spotify/step3.jpg",
-  "current_score": 0.7798,
-  "new_score": 0.7054,
-  "delta": -0.0744,
-  "target_salience_before": 0.7088,
-  "target_salience_after": 0.4793,
+  "current_score": 0.7812,
+  "new_score": 0.7812,
+  "delta": 0.0,
+  "target_salience_before": 0.7147,
+  "target_salience_after": 0.7147,
   "judge": 0.9,
-  "judge_reason": "This creative is high quality and an excellent brand fit for Spotify. The first-person perspective, looking down at a phone with the Spotify interface, creates a relatable and authentic feel, aligning with Spotify's casual and accessible brand image. The prominent display of the Spotify logo and the 'SPOTIFY PREMIUM' call to action are clear and well-branded. The text 'STREAM YOUR WORLD' and 'DOWNLOAD NOW' clearly communicate value and provide a direct call to action. The overall aesthetic is clean, modern, and perfectly suited for a mobile-first advertising environment. This creative would absolutely run as a real ad, likely across social media platforms or in app stores, effectively targeting potential users or those considering Premium.",
+  "judge_reason": "This creative is high quality and a strong brand-fit for Spotify. The image clearly displays the Spotify logo on a modern smartphone, held in a natural, casual setting. The focus is sharp on the phone and logo, with a pleasingly blurred background that suggests an everyday, outdoor environment. This aligns perfectly with Spotify's brand messaging of music being accessible and part of daily life. It looks authentic, not overly staged, which is a common and effective style for app advertising. It would absolutely run as a real ad, perhaps for general brand awareness or to promote 'music for any moment.' The only very minor critiques could be some visible smudges/fingerprints on the screen, which is realistic but some brands prefer perfectly pristine screens in ads, and the visible time/signal which are neutral elements.",
   "vetoed": false,
   "guard": "reject",
   "guard_reasons": [
-   "attention score did not improve"
+   "change is imperceptible (ssim 1.0/1.0) \u2014 likely reward-hack"
   ],
   "improved": false,
-  "n_directives": 7,
+  "n_directives": 6,
   "variant_heatmap": "replay/spotify/step3-heat.png"
+ },
+ {
+  "step": 4,
+  "directive": "remove the Hand holding object completely and fill its area with what would naturally be behind it. Keep the Spotify ad, product, logo and slogan exactly as they are",
+  "variant_png": "replay/spotify/step4.jpg",
+  "current_score": 0.7812,
+  "new_score": 0.7812,
+  "delta": 0.0,
+  "target_salience_before": 0.7147,
+  "target_salience_after": 0.7147,
+  "judge": 0.9,
+  "judge_reason": "This creative has excellent brand-fit and good quality. It clearly features the Spotify logo on a smartphone screen, which is instantly recognizable. The casual, outdoor setting (implied by the blurred background and casual attire) aligns perfectly with Spotify's brand image of music for every moment and location. The image quality is clear, well-lit, and focused on the product. It's a simple, effective, and relatable visual that could easily run as a real ad, especially for brand awareness or promoting mobile app usage.",
+  "vetoed": false,
+  "guard": "reject",
+  "guard_reasons": [
+   "change is imperceptible (ssim 1.0/1.0) \u2014 likely reward-hack"
+  ],
+  "improved": false,
+  "n_directives": 6,
+  "variant_heatmap": "replay/spotify/step4-heat.png"
  }
 ]

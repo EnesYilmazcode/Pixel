@@ -31,18 +31,16 @@ def _genai():
     return _client
 
 
-# Focus-oriented edit template. We optimize attention onto the brand, so the editor MAY make
-# real content changes — enlarge/brighten the logo, add a bold CTA, remove clutter — not just
-# dim the background. Only constraint: keep the brand element roughly where it is and keep the
-# overall aspect ratio (so the before/after attention score stays comparable).
+# Edit template. Measured on the recorded runs (docs/PIXEL_FINDINGS.md): text is the
+# strongest attractor DeepGaze knows, so a new headline or button outside the brand box
+# cost 5 to 22 points, and "make it a polished ad" made the model redraw the whole frame.
+# So the editor gets one concrete, local change and is told not to add text or touch
+# anything else. Dimming the scene is not offered either; the guard rejects it anyway.
 _EDIT_TMPL = (
-    "You are a senior art director optimizing this ad so the brand's logo / product / "
-    "call-to-action is the first thing the eye lands on. Apply this change: {directive}. "
-    "You MAY enlarge, brighten and sharpen the brand logo and product, add a clear bold "
-    "on-brand call-to-action or wordmark, and remove or simplify clutter and competing "
-    "elements. Keep the brand element roughly centered where it already sits (do not move it "
-    "to a different part of the frame) and do NOT crop or change the overall aspect ratio. "
-    "Return one polished, realistic, on-brand ad."
+    "Edit this ad photo. Apply exactly this one change: {directive}. "
+    "Do not add any text, letters, words, logos, slogans, buttons, badges or graphics. "
+    "Do not change the lighting, colors, camera angle, framing or crop, and do not move "
+    "or resize the product. Leave every other part of the photo exactly as it is."
 )
 
 
@@ -135,10 +133,12 @@ def brand_brief(brand: str) -> dict:
         return dict(_FALLBACK_BRIEF)
 
 
-def name_regions(image: Image.Image, regions: list[list[float]]) -> list[str]:
+def name_regions(image: Image.Image, regions: list[list[float]], brand: str = "") -> list[dict]:
     """Label what's actually inside each normalized [x,y,w,h] box (e.g. 'woman's face',
     'Coca-Cola can') so distractor callouts read like a human, not 'upper-left region'.
-    Returns [] on no key/error — callers keep their own position labels."""
+    With a brand, also say whether each crop is part of that brand's own ad (its product,
+    logo, slogan or tagline), which a removal branch must never touch.
+    Returns [{"name", "own"}] per region, or [] on no key/error."""
     client = _genai()
     if client is None or not regions:
         return []
@@ -147,25 +147,30 @@ def name_regions(image: Image.Image, regions: list[list[float]]) -> list[str]:
     W, H = image.size
     crops = [image.crop((int(x * W), int(y * H), int((x + w) * W), int((y + h) * H)))
              for x, y, w, h in regions]
+    own = (f' and "own":[true/false,...], true when the crop shows part of the {brand} ad '
+           f"itself (its product, logo, slogan or tagline)") if brand else ""
     prompt = (
         f"Here are {len(crops)} crops from one ad, in order. Name the main object in each "
-        'crop in 2-4 words. Respond ONLY JSON {"labels":["..","..."]} in the same order.'
+        f'crop in 2-4 words. Respond ONLY JSON {{"labels":["..",".."]{own}}} in the same order.'
     )
     try:
         resp = client.models.generate_content(model=settings.gemini_text_model, contents=[prompt, *crops])
-        labels = json.loads(_first_json(resp.text)).get("labels", [])
-        return [str(x) for x in labels][: len(regions)]
+        j = json.loads(_first_json(resp.text))
+        labels, owns = j.get("labels", []), j.get("own", [])
+        return [{"name": str(n), "own": bool(owns[i]) if i < len(owns) else False}
+                for i, n in enumerate(labels[: len(regions)])]
     except Exception:
         return []
 
 
-def label_distractors(image: Image.Image, distractors: list[dict]) -> None:
+def label_distractors(image: Image.Image, distractors: list[dict], brand: str = "") -> None:
     """Replace each distractor's position label ('upper-left region') with the named
-    object Gemini sees there ('woman's face'). Mutates in place; no-op without a key."""
-    names = name_regions(image, [d["region"] for d in distractors])
-    for d, nm in zip(distractors, names):
-        if nm:
-            d["desc"] = nm
+    object Gemini sees there ('woman's face'), and mark the ones that belong to the
+    brand's own ad. Mutates in place; no-op without a key."""
+    for d, nm in zip(distractors, name_regions(image, [d["region"] for d in distractors], brand)):
+        if nm["name"]:
+            d["desc"] = nm["name"]
+        d["own"] = nm["own"]
 
 
 def _first_json(text: str) -> str:

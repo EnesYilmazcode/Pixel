@@ -135,7 +135,8 @@ export default function App() {
     setBusy(`Retoucher · branch ${ctl.step + 1} with Nano Banana…`);
     try {
       const src = ctl.step === 0 ? file : await dataUrlToFile(ctl.bestImgUrl, "best.png");
-      const res = await optimizeStep(src, brand, ctl.step, active?.target_box, hint, active?.id);
+      const tried = (agents?.tree ?? []).filter((n) => n.parent !== null).map((n) => n.directive);
+      const res = await optimizeStep(src, brand, ctl.step, active?.target_box, hint, active?.id, tried);
       const newScore = res.new_score;          // real size-invariant prominence (can be lower)
       const improved = res.improved;           // real: rose AND not vetoed AND guard accepted
       const becomesBest = improved && newScore > ctl.bestScore;
