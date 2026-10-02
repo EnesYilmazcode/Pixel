@@ -4,6 +4,8 @@ Run:  python -m pytest test_branches.py   (or)   python test_branches.py
 """
 from __future__ import annotations
 
+import re
+
 import numpy as np
 from PIL import Image, ImageFilter
 
@@ -27,27 +29,33 @@ def test_one_removal_branch_per_thief_then_a_polish():
     assert "Subway sign" in pool[0]["directive"] and pool[0]["region"] == [_BEFORE["distractors"][0]["region"]]
     assert "lower-left region of the photo" in pool[1]["directive"]  # unnamed thief still targeted
     assert pool[2]["region"] == [_BEFORE["target_box"]]
+    assert pool[0]["protect"] == [_BEFORE["target_box"]]  # a removal never touches the brand
 
 
 def test_no_branch_adds_text_or_dims_the_scene():
-    banned = ("headline", "call-to-action", "cta", "slogan", "wordmark", "dim", "darken",
+    banned = ("headline", "call-to-action", "cta", "wordmark", "tagline", "dim", "darken",
               "tone down", "desaturate", "blur")
     for b in branches(_BEFORE, "Nike"):
-        assert not any(w in b["directive"].lower() for w in banned), b["directive"]
+        d = b["directive"].lower()
+        assert not any(w in d for w in banned), d
+        assert not re.search(r"add", d), d  # never asks to add anything
 
 
 def test_ad_with_no_thieves_still_gets_a_branch():
     assert len(branches({"target_box": [0.3, 0.3, 0.3, 0.3], "distractors": []}, "Pepsi")) == 1
 
 
-def test_keep_region_leaves_everything_else_identical():
-    edited = Image.new("RGB", _ORIG.size, (255, 0, 0))  # the model redrew the whole frame
-    region = [0.1, 0.1, 0.2, 0.2]
-    out = np.asarray(compose.keep_region(_ORIG, edited, [region])).astype(int)
-    a = np.asarray(_ORIG).astype(int)
-    m = np.asarray(compose.region_mask(_ORIG.size, [region])) == 0
-    assert (out[m] == a[m]).all()                      # untouched pixels stay identical
-    assert out[45, 30, 0] > 200 and out[45, 30, 1] < 60  # the region itself took the edit
+def test_keep_changes_takes_only_real_changes_near_the_region_and_off_the_brand():
+    a = np.asarray(_ORIG).copy()
+    edited = a.copy()
+    edited[200:260, 20:80] = 0      # the removal, inside the branch region
+    edited[20:60, 140:190] = 255    # drift far from the region
+    edited[100:140, 80:110] = 255   # a change on the brand box
+    out = np.asarray(compose.keep_changes(_ORIG, Image.fromarray(edited),
+                                          near=[[0.1, 0.65, 0.3, 0.2]], protect=[[0.35, 0.3, 0.3, 0.3]]))
+    assert out[230, 50].max() < 40                       # removal kept
+    assert (out[40, 165] == a[40, 165]).all()            # far drift dropped
+    assert (out[120, 95] == a[120, 95]).all()            # brand untouched
 
 
 def test_register_undoes_a_small_shift():
