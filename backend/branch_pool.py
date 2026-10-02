@@ -16,6 +16,8 @@ def branches(before: dict, brand: str) -> list[dict]:
     or dims the scene."""
     out = []
     for d in before.get("distractors", []):
+        if d.get("own"):  # the brand's own slogan or logo pulling the eye is not a thief
+            continue
         what = d["desc"]
         if what.endswith(" region"):  # unnamed: Gemini couldn't label it
             what = f"distracting object in the {what} of the photo"

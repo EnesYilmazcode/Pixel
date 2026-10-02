@@ -96,16 +96,16 @@ async def run_agents(image: UploadFile = File(...), brand: str = Form("the brand
 # Gemini names the same thief differently on each call ("white phone back", "back of
 # phone"), so an unchanged image kept retrying the same removal under a new name. Names
 # are cached per image and region, which keeps the "tried" list meaningful.
-_LABELS: dict[tuple, list[str]] = {}
+_LABELS: dict[tuple, list[tuple[str, bool]]] = {}
 
 
-def _label_once(img: Image.Image, distractors: list[dict]) -> None:
-    key = (hashlib.md5(img.tobytes()).hexdigest(), tuple(tuple(d["region"]) for d in distractors))
+def _label_once(img: Image.Image, distractors: list[dict], brand: str) -> None:
+    key = (hashlib.md5(img.tobytes()).hexdigest(), brand, tuple(tuple(d["region"]) for d in distractors))
     if key not in _LABELS:
-        gemini.label_distractors(img, distractors)
-        _LABELS[key] = [d["desc"] for d in distractors]
-    for d, name in zip(distractors, _LABELS[key]):
-        d["desc"] = name
+        gemini.label_distractors(img, distractors, brand)
+        _LABELS[key] = [(d["desc"], d.get("own", False)) for d in distractors]
+    for d, (name, own) in zip(distractors, _LABELS[key]):
+        d["desc"], d["own"] = name, own
 
 
 @app.post("/optimize/step")
@@ -120,7 +120,7 @@ async def optimize_step(image: UploadFile = File(...), brand: str = Form("the br
     img = await _image(image)
     box = json.loads(target) if target else None
     before = dg.predict(img, box, n_thieves=3)
-    _label_once(img, before["distractors"])  # branches name what to remove
+    _label_once(img, before["distractors"], brand)  # branches name what to remove
     tbox = box or before["target_box"]
     current = before["attention_score"]
     abs_before = before["target_salience"]

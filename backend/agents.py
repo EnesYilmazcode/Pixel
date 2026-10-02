@@ -108,7 +108,8 @@ def _step_prep(state: dict) -> dict:
 def _step_context(state: dict) -> dict:
     """Distractor naming + competitor RAG (Scout) — independent, run concurrently."""
     with cf.ThreadPoolExecutor(max_workers=2) as ex:
-        f_names = ex.submit(gemini.label_distractors, state["image"], state["before"]["distractors"])
+        f_names = ex.submit(gemini.label_distractors, state["image"], state["before"]["distractors"],
+                            state["brand"])
         f_insights = ex.submit(scout, state["brand"], state["brief"])
         f_names.result()
         state["insights"] = f_insights.result()

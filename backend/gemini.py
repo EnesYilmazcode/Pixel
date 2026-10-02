@@ -133,10 +133,12 @@ def brand_brief(brand: str) -> dict:
         return dict(_FALLBACK_BRIEF)
 
 
-def name_regions(image: Image.Image, regions: list[list[float]]) -> list[str]:
+def name_regions(image: Image.Image, regions: list[list[float]], brand: str = "") -> list[dict]:
     """Label what's actually inside each normalized [x,y,w,h] box (e.g. 'woman's face',
     'Coca-Cola can') so distractor callouts read like a human, not 'upper-left region'.
-    Returns [] on no key/error — callers keep their own position labels."""
+    With a brand, also say whether each crop is part of that brand's own ad (its product,
+    logo, slogan or tagline), which a removal branch must never touch.
+    Returns [{"name", "own"}] per region, or [] on no key/error."""
     client = _genai()
     if client is None or not regions:
         return []
@@ -145,25 +147,30 @@ def name_regions(image: Image.Image, regions: list[list[float]]) -> list[str]:
     W, H = image.size
     crops = [image.crop((int(x * W), int(y * H), int((x + w) * W), int((y + h) * H)))
              for x, y, w, h in regions]
+    own = (f' and "own":[true/false,...], true when the crop shows part of the {brand} ad '
+           f"itself (its product, logo, slogan or tagline)") if brand else ""
     prompt = (
         f"Here are {len(crops)} crops from one ad, in order. Name the main object in each "
-        'crop in 2-4 words. Respond ONLY JSON {"labels":["..","..."]} in the same order.'
+        f'crop in 2-4 words. Respond ONLY JSON {{"labels":["..",".."]{own}}} in the same order.'
     )
     try:
         resp = client.models.generate_content(model=settings.gemini_text_model, contents=[prompt, *crops])
-        labels = json.loads(_first_json(resp.text)).get("labels", [])
-        return [str(x) for x in labels][: len(regions)]
+        j = json.loads(_first_json(resp.text))
+        labels, owns = j.get("labels", []), j.get("own", [])
+        return [{"name": str(n), "own": bool(owns[i]) if i < len(owns) else False}
+                for i, n in enumerate(labels[: len(regions)])]
     except Exception:
         return []
 
 
-def label_distractors(image: Image.Image, distractors: list[dict]) -> None:
+def label_distractors(image: Image.Image, distractors: list[dict], brand: str = "") -> None:
     """Replace each distractor's position label ('upper-left region') with the named
-    object Gemini sees there ('woman's face'). Mutates in place; no-op without a key."""
-    names = name_regions(image, [d["region"] for d in distractors])
-    for d, nm in zip(distractors, names):
-        if nm:
-            d["desc"] = nm
+    object Gemini sees there ('woman's face'), and mark the ones that belong to the
+    brand's own ad. Mutates in place; no-op without a key."""
+    for d, nm in zip(distractors, name_regions(image, [d["region"] for d in distractors], brand)):
+        if nm["name"]:
+            d["desc"] = nm["name"]
+        d["own"] = nm["own"]
 
 
 def _first_json(text: str) -> str:
